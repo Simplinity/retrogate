@@ -241,14 +241,23 @@ struct ContentView: View {
             }
             .padding()
 
-            GroupBox("Wayback Machine") {
+            GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle("Enable Wayback Mode", isOn: $state.waybackEnabled)
+                        .tint(.orange)
                     if state.waybackEnabled {
                         DatePicker("Browse the web as it was on:", selection: $state.waybackDate, displayedComponents: .date)
                     }
                 }
                 .padding(4)
+            } label: {
+                HStack {
+                    Text("Wayback Machine")
+                    if state.waybackEnabled {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .foregroundColor(.orange)
+                    }
+                }
             }
 
             GroupBox("Transcoding") {
