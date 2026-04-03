@@ -36,7 +36,7 @@ struct RetroGateApp: App {
 
 @MainActor
 class ProxyState: ObservableObject {
-    @Published var isRunning = false
+    @Published var isRunning = true
     @Published var port: UInt16 = 8080
     @Published var waybackEnabled = false
     @Published var waybackDate = Date()
@@ -47,6 +47,10 @@ class ProxyState: ObservableObject {
 
     private var server: ProxyServer?
     private var serverTask: Task<Void, Never>?
+
+    init() {
+        startProxy()
+    }
 
     enum TranscodingLevel: String, CaseIterable, Identifiable {
         case minimal = "Minimal (TLS bridge only)"
