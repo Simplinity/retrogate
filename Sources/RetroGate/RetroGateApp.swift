@@ -228,6 +228,7 @@ struct ContentView: View {
                         .font(.headline)
                 }
                 .toggleStyle(.switch)
+                .tint(.green)
                 .labelsHidden()
 
                 if state.isRunning {
