@@ -217,19 +217,20 @@ struct ContentView: View {
                     .font(.system(size: 48))
                     .foregroundStyle(state.isRunning ? .green : .secondary)
 
-                Toggle(isOn: Binding(
-                    get: { state.isRunning },
-                    set: { newValue in
-                        state.isRunning = newValue
-                        state.toggleProxy()
-                    }
-                )) {
-                    Text(state.isRunning ? "Proxy Running" : "Proxy Stopped")
-                        .font(.headline)
+                Button {
+                    state.isRunning.toggle()
+                    state.toggleProxy()
+                } label: {
+                    Text(state.isRunning ? "Stop Proxy" : "Start Proxy")
+                        .frame(width: 120)
                 }
-                .toggleStyle(.switch)
-                .tint(.green)
-                .labelsHidden()
+                .controlSize(.large)
+                .buttonStyle(.borderedProminent)
+                .tint(state.isRunning ? .red : .green)
+
+                Text(state.isRunning ? "Proxy Running" : "Proxy Stopped")
+                    .font(.headline)
+                    .foregroundColor(state.isRunning ? .green : .secondary)
 
                 if state.isRunning {
                     Text("Configure your vintage Mac's HTTP proxy to:")
