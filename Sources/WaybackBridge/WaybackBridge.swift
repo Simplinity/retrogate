@@ -72,28 +72,48 @@ public struct WaybackBridge {
             }
         }
         
-        // Rewrite archived asset URLs back to their Wayback versions
-        // (so images and CSS still load through our proxy)
+        // Rewrite all URLs (links, images, CSS) so they go through
+        // the proxy as plain http:// instead of https://web.archive.org/...
         for link in try doc.select("a[href]") {
             if let href = try? link.attr("href") {
-                let cleaned = cleanWaybackHref(href)
-                try link.attr("href", cleaned)
+                try link.attr("href", cleanWaybackHref(href))
             }
         }
-        
+        for img in try doc.select("img[src]") {
+            if let src = try? img.attr("src") {
+                try img.attr("src", cleanWaybackHref(src))
+            }
+        }
+        for link in try doc.select("link[href]") {
+            if let href = try? link.attr("href") {
+                try link.attr("href", cleanWaybackHref(href))
+            }
+        }
+        for el in try doc.select("[background]") {
+            if let bg = try? el.attr("background") {
+                try el.attr("background", cleanWaybackHref(bg))
+            }
+        }
+
         logger.debug("Cleaned Wayback Machine injection from response")
         return try doc.outerHtml()
     }
     
-    /// Strip the `/web/YYYYMMDD*/` prefix from Wayback-rewritten hrefs
-    /// so links point to original URLs (which our proxy will re-wayback).
+    /// Strip Wayback Machine URL wrapping so links point to original URLs
+    /// (which our proxy will re-wayback on the next request).
+    /// Handles both relative (/web/YYYYMMDD/...) and absolute (https://web.archive.org/web/YYYYMMDD/...) forms.
+    /// Also handles the "im_" suffix used for image URLs.
     private func cleanWaybackHref(_ href: String) -> String {
-        // Wayback rewrites links like: /web/20010101/http://example.com/page
-        // We want to extract: http://example.com/page
-        let pattern = #"/web/\d+\*?/(https?://.*)"#
-        if let range = href.range(of: pattern, options: .regularExpression),
-           let captureRange = href.range(of: #"https?://.*"#, options: .regularExpression, range: range) {
-            return String(href[captureRange])
+        // Match: https://web.archive.org/web/YYYYMMDDHHMMSSim_/http://...
+        // or:    /web/YYYYMMDDHHMMSSim_/http://...
+        // The \w* after digits covers suffixes like "im_", "cs_", "js_", etc.
+        let pattern = #"(?:https?://web\.archive\.org)?/web/\d+\w*/(https?://.*)"#
+        if let range = href.range(of: pattern, options: .regularExpression) {
+            // Extract the original URL (the captured group)
+            let innerPattern = #"(https?://(?!web\.archive\.org).*)"#
+            if let captureRange = href.range(of: innerPattern, options: .regularExpression, range: range) {
+                return String(href[captureRange])
+            }
         }
         return href
     }
