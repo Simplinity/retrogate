@@ -18,15 +18,15 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
     typealias OutboundOut = HTTPServerResponsePart
 
     private let logger: Logger
-    private let configuration: ProxyConfiguration
+    private let sharedConfig: SharedConfiguration
     private var requestHead: HTTPRequestHead?
     private var requestBody: ByteBuffer?
 
     private static let maxResponseSize = 10 * 1024 * 1024 // 10 MB
 
-    init(logger: Logger, configuration: ProxyConfiguration) {
+    init(logger: Logger, sharedConfig: SharedConfiguration) {
         self.logger = logger
-        self.configuration = configuration
+        self.sharedConfig = sharedConfig
     }
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -58,6 +58,9 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
             return
         }
 
+        // Snapshot config at request time so UI changes take effect immediately
+        let config = self.sharedConfig.value
+
         // Upgrade http:// to https:// for the outbound fetch
         var fetchURL = originalURL
         if var components = URLComponents(url: originalURL, resolvingAgainstBaseURL: false) {
@@ -68,8 +71,8 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         }
 
         // Wayback Machine URL rewriting
-        if configuration.waybackEnabled {
-            let bridge = WaybackBridge(targetDate: configuration.waybackDate)
+        if config.waybackEnabled {
+            let bridge = WaybackBridge(targetDate: config.waybackDate)
             if !bridge.isWaybackURL(fetchURL) {
                 fetchURL = bridge.rewriteURL(fetchURL)
             }
@@ -77,7 +80,6 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
 
         // Bridge NIO → async: spawn a Task, write the response back on the event loop
         let promise = context.eventLoop.makePromise(of: Void.self)
-        let config = self.configuration
         let logger = self.logger
 
         promise.completeWithTask {

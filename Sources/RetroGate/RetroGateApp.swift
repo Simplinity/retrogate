@@ -62,6 +62,19 @@ class ProxyState: ObservableObject {
         }
     }
 
+    /// Push current UI settings to the running server's shared config.
+    func syncConfig() {
+        guard let server = server else { return }
+        server.sharedConfig.value = ProxyConfiguration(
+            transcodingLevel: transcodingLevel.htmlLevel,
+            waybackEnabled: waybackEnabled,
+            waybackDate: waybackDate,
+            maxImageWidth: maxImageWidth,
+            imageQuality: imageQuality,
+            onRequestLogged: server.sharedConfig.value.onRequestLogged
+        )
+    }
+
     private func startProxy() {
         let config = ProxyConfiguration(
             transcodingLevel: transcodingLevel.htmlLevel,
@@ -247,6 +260,11 @@ struct ContentView: View {
             Spacer()
         }
         .padding()
+        .onChange(of: state.transcodingLevel) { state.syncConfig() }
+        .onChange(of: state.waybackEnabled) { state.syncConfig() }
+        .onChange(of: state.waybackDate) { state.syncConfig() }
+        .onChange(of: state.maxImageWidth) { state.syncConfig() }
+        .onChange(of: state.imageQuality) { state.syncConfig() }
     }
 
     private var requestLogView: some View {
