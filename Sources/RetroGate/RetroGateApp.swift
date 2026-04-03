@@ -7,6 +7,16 @@ import HTMLTranscoder
 struct RetroGateApp: App {
     @StateObject private var proxyState = ProxyState()
 
+    init() {
+        // Disable App Nap — RetroGate is a server that must stay active
+        // even when the user switches to another app
+        ProcessInfo.processInfo.disableAutomaticTermination("Proxy server running")
+        ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated, .idleSystemSleepDisabled],
+            reason: "RetroGate proxy must remain responsive"
+        )
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
