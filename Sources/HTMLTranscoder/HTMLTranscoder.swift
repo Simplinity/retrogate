@@ -31,21 +31,23 @@ public struct HTMLTranscoder {
     public func transcode(_ html: String, baseURL: URL) throws -> String {
         let doc = try SwiftSoup.parse(html, baseURL.absoluteString)
         
+        // These run for ALL levels — charset and image URLs must always be fixed
+        // for vintage browsers to work at all
+        try stripScripts(doc)
+        try setCharsetMeta(doc)
+        try rewriteImageSources(doc, baseURL: baseURL)
+
         switch level {
         case .minimal:
-            try stripScripts(doc)
+            break
         case .moderate:
-            try stripScripts(doc)
             try simplifyCSS(doc)
             try downgradeSemanticTags(doc)
         case .aggressive:
-            try stripScripts(doc)
             try simplifyCSS(doc)
             try downgradeSemanticTags(doc)
             try convertToTableLayout(doc)
             try inlineStyles(doc)
-            try rewriteImageSources(doc, baseURL: baseURL)
-            try setCharsetMeta(doc)
         }
         
         return try doc.outerHtml()
