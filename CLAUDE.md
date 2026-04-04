@@ -104,7 +104,6 @@ VM networking (slirp) drops after a while. Restart SheepShaver to fix.
 - [x] 33. Domain whitelist for transcoding bypass — retro-friendly sites skip transcoding
 - [x] 36. Chunked Transfer-Encoding de-chunking for HTTP/1.0 clients
 - [x] 37. HTML minification for bandwidth savings on slow connections
-- [ ] 23. Configurable rule engine — declarative regex find/replace rules by URL/UA/Content-Type
 - [ ] 34. Browser-specific presets (MacWeb 2, Netscape 2, IE 3, etc.) keyed on User-Agent
 - [ ] 35. CSS vendor prefix injection for medium-vintage browsers (Firefox 3.5-16, old Safari)
 
