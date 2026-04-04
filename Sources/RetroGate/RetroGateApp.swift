@@ -264,7 +264,12 @@ class ProxyState: ObservableObject {
         platform = VintagePlatform(rawValue: s.platform) ?? .mac
         if VintagePreset.all.contains(where: { $0.id == s.presetId }) { presetId = s.presetId }
         resolution = ScreenResolution(width: s.screenWidth, height: s.screenHeight)
-        transcodingBypassDomainsText = s.transcodingBypassDomains
+        // Migrate: if bypass domains are empty (old config), populate with defaults
+        if s.transcodingBypassDomains.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            transcodingBypassDomainsText = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
+        } else {
+            transcodingBypassDomainsText = s.transcodingBypassDomains
+        }
         minifyHTML = s.minifyHTML
         saveSettings() // Ensure config file exists on first launch
         startProxy()
