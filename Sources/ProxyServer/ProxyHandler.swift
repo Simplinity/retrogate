@@ -289,6 +289,21 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
                 context.eventLoop.execute {
                     self.sendResponse(context: context, data: data, contentType: contentType, statusCode: statusCode, extraHeaders: extraHeaders)
                 }
+
+                // Prefetch sub-resources for Wayback HTML pages.
+                // Fires parallel background requests so images are cached
+                // before the vintage browser asks for them.
+                if contentType.contains("text/html"),
+                   case .wayback(let targetDate, _) = config.browsingMode {
+                    Self.prefetchWaybackImages(
+                        htmlData: data,
+                        pageURL: resolvedURL,
+                        waybackDate: targetDate,
+                        temporalCache: temporalCache,
+                        responseCache: responseCache,
+                        logger: logger
+                    )
+                }
             } catch {
                 context.eventLoop.execute {
                     logger.error("Fetch failed for \(head.uri): \(error)")
@@ -1264,6 +1279,119 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         s = s.replacingOccurrences(of: "\u{2191}", with: "^")  // ↑
         s = s.replacingOccurrences(of: "\u{2193}", with: "v")  // ↓
         return s
+    }
+
+    // MARK: - Wayback Image Prefetching
+    //
+    // When a Wayback HTML page loads, the browser will request every <img>
+    // and background image one-by-one. Each Wayback fetch takes 2-5 seconds,
+    // so a page with 10 images means 10-20 seconds of waiting.
+    //
+    // Prefetching fires parallel background requests for all image URLs as
+    // soon as we parse the HTML — before the browser even asks. By the time
+    // the browser requests each image, it's already in the ResponseCache.
+
+    /// Extract image URLs from transcoded HTML (already encoded, but URLs are ASCII-safe).
+    private static func extractImageURLs(from htmlData: Data, baseURL: URL) -> [URL] {
+        // Try decoding with common encodings — we only need ASCII URLs
+        guard let html = String(data: htmlData, encoding: .isoLatin1)
+              ?? String(data: htmlData, encoding: .utf8)
+              ?? String(data: htmlData, encoding: .macOSRoman) else { return [] }
+
+        // Match <img src="..."> and background="..." attributes
+        // After transcoding, URLs are absolute HTTP and ASCII-safe.
+        let patterns = [
+            #"<img\b[^>]*\bsrc\s*=\s*"([^"]+)"#,   // <img src="...">
+            #"\bbackground\s*=\s*"([^"]+)"#,          // <td background="...">
+        ]
+
+        var urls = Set<URL>()
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
+            let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
+            for match in matches {
+                guard let range = Range(match.range(at: 1), in: html) else { continue }
+                let urlStr = String(html[range])
+
+                // Skip data: URIs, anchors, javascript:
+                guard !urlStr.hasPrefix("data:"),
+                      !urlStr.hasPrefix("#"),
+                      !urlStr.hasPrefix("javascript:") else { continue }
+
+                // Resolve relative URLs against the page's base URL
+                if let url = URL(string: urlStr, relativeTo: baseURL)?.absoluteURL {
+                    urls.insert(url)
+                }
+            }
+        }
+
+        return Array(urls.prefix(30))  // Cap at 30 to avoid flooding archive.org
+    }
+
+    /// Fire background fetches for all image URLs found in a Wayback HTML page.
+    /// Each fetched response is stored in the ResponseCache so subsequent
+    /// browser requests get instant cache hits.
+    private static func prefetchWaybackImages(
+        htmlData: Data,
+        pageURL: URL,
+        waybackDate: Date,
+        temporalCache: TemporalCache,
+        responseCache: ResponseCache,
+        logger: Logger
+    ) {
+        let imageURLs = extractImageURLs(from: htmlData, baseURL: pageURL)
+        guard !imageURLs.isEmpty else { return }
+
+        logger.info("Prefetching \(imageURLs.count) sub-resources for \(pageURL.host ?? "?")")
+
+        for imageURL in imageURLs {
+            Task {
+                // Use temporal cache for date consistency (same as normal request flow)
+                var fetchDate = waybackDate
+                if let domain = imageURL.host,
+                   let cachedStamp = temporalCache.get(domain: domain) {
+                    let fmt = DateFormatter()
+                    fmt.dateFormat = "yyyyMMdd"
+                    if let d = fmt.date(from: cachedStamp) {
+                        fetchDate = d
+                    }
+                }
+
+                // Construct Wayback URL (same logic as handleProxyRequest Wayback branch)
+                let bridge = WaybackBridge(targetDate: fetchDate)
+                let fetchURL = bridge.rewriteURL(imageURL)
+                let cacheKey = fetchURL.absoluteString
+
+                // Skip if already cached
+                guard responseCache.get(url: cacheKey) == nil else { return }
+
+                // Best-effort fetch — no retries, failures are non-critical.
+                // The browser's actual request will use fetchWithRetry if this misses.
+                var request = URLRequest(url: fetchURL)
+                request.timeoutInterval = 20
+                request.setValue(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                    forHTTPHeaderField: "User-Agent"
+                )
+                if let host = fetchURL.host {
+                    request.setValue(host, forHTTPHeaderField: "Host")
+                }
+
+                do {
+                    let delegate = WaybackRedirectGuard()
+                    let (data, response) = try await urlSession.data(for: request, delegate: delegate)
+                    if let http = response as? HTTPURLResponse,
+                       http.statusCode >= 200, http.statusCode < 400,
+                       let ct = http.value(forHTTPHeaderField: "Content-Type") {
+                        responseCache.set(url: cacheKey, data: data, contentType: ct)
+                        logger.debug("Prefetched: \(imageURL.lastPathComponent) (\(data.count) bytes)")
+                    }
+                } catch {
+                    // Non-critical — the browser's request will fetch it normally
+                    logger.debug("Prefetch skipped: \(imageURL.lastPathComponent)")
+                }
+            }
+        }
     }
 
     // MARK: - Response Writing
