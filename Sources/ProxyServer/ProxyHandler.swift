@@ -746,7 +746,8 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         let transcoder = ImageTranscoder(
             maxWidth: configuration.maxImageWidth,
             maxHeight: configuration.maxImageWidth * 3 / 4,
-            outputFormat: outputFormat
+            outputFormat: outputFormat,
+            colorDepth: configuration.colorDepth
         )
 
         // forceFormat: true means also transcode JPEG→GIF if the browser only accepts GIF

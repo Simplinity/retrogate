@@ -1,5 +1,6 @@
 import Foundation
 import HTMLTranscoder
+import ImageTranscoder
 
 // MARK: - Browsing Mode
 
@@ -44,6 +45,8 @@ public struct ProxyConfiguration: Sendable {
     public var transcodingBypassDomains: Set<String>
     /// Enable HTML minification to reduce bandwidth on slow connections.
     public var minifyHTML: Bool
+    /// Display color depth — controls image dithering and palette reduction.
+    public var colorDepth: ColorDepth
     public var onRequestLogged: (@Sendable (RequestLogData) -> Void)?
 
     public init(
@@ -54,6 +57,7 @@ public struct ProxyConfiguration: Sendable {
         outputEncoding: OutputEncoding = .isoLatin1,
         transcodingBypassDomains: Set<String> = [],
         minifyHTML: Bool = false,
+        colorDepth: ColorDepth = .thousands,
         onRequestLogged: (@Sendable (RequestLogData) -> Void)? = nil
     ) {
         self.browsingMode = browsingMode
@@ -63,6 +67,7 @@ public struct ProxyConfiguration: Sendable {
         self.outputEncoding = outputEncoding
         self.transcodingBypassDomains = transcodingBypassDomains
         self.minifyHTML = minifyHTML
+        self.colorDepth = colorDepth
         self.onRequestLogged = onRequestLogged
     }
 }

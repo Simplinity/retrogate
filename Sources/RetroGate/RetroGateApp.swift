@@ -2,6 +2,7 @@ import SwiftUI
 import Logging
 import ProxyServer
 import HTMLTranscoder
+import ImageTranscoder
 
 @main
 struct RetroGateApp: App {
@@ -70,6 +71,11 @@ struct VintagePreset: Identifiable {
     /// content predating 1993.
     let eraRange: ClosedRange<Int>
 
+    /// Color depths this hardware typically supported.
+    let supportedColorDepths: [ColorDepth]
+    /// The most common color depth for this era.
+    let defaultColorDepth: ColorDepth
+
     /// Suggested Wayback date — the midpoint of this OS's web browsing era.
     var suggestedWaybackDate: Date {
         let midYear = eraRange.lowerBound + (eraRange.upperBound - eraRange.lowerBound) / 2
@@ -88,21 +94,26 @@ struct VintagePreset: Identifiable {
     static let all: [VintagePreset] = [
         // ── Mac ──────────────────────────────────────
         // System 6 (1988): Predates the web, but MacWWW (1993) runs on it.
-        // Earliest useful web content: 1993–1995 (NCSA Mosaic era).
+        // Mac Plus/SE had 1-bit B&W screens; Mac II had color.
         VintagePreset(id: "system6", platform: .mac, osName: "System 6", year: "1988",
                       htmlLevel: .aggressive, imageQuality: 0.3,
                       defaultResolution: .init(width: 512, height: 342),
                       resolutions: [.init(width: 512, height: 342),
                                     .init(width: 640, height: 480)],
-                      eraRange: 1993...1995),
+                      eraRange: 1993...1995,
+                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands],
+                      defaultColorDepth: .monochrome),
         // System 7 (1991): NCSA Mosaic, early Netscape.
+        // Classic was B&W, but most System 7 Macs had color.
         VintagePreset(id: "system7", platform: .mac, osName: "System 7", year: "1991",
                       htmlLevel: .aggressive, imageQuality: 0.4,
                       defaultResolution: .init(width: 640, height: 480),
                       resolutions: [.init(width: 512, height: 342),
                                     .init(width: 640, height: 480),
                                     .init(width: 832, height: 624)],
-                      eraRange: 1994...1997),
+                      eraRange: 1994...1997,
+                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands],
+                      defaultColorDepth: .twoFiftySix),
         // Mac OS 8 (1997): Netscape 3–4, IE 4 Mac, Cyberdog.
         VintagePreset(id: "macos8", platform: .mac, osName: "Mac OS 8", year: "1997",
                       htmlLevel: .moderate, imageQuality: 0.5,
@@ -110,7 +121,9 @@ struct VintagePreset: Identifiable {
                       resolutions: [.init(width: 640, height: 480),
                                     .init(width: 832, height: 624),
                                     .init(width: 1024, height: 768)],
-                      eraRange: 1997...1999),
+                      eraRange: 1997...1999,
+                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Mac OS 9 (1999): IE 5 Mac, Netscape 4.7, iCab.
         VintagePreset(id: "macos9", platform: .mac, osName: "Mac OS 9", year: "1999",
                       htmlLevel: .moderate, imageQuality: 0.6,
@@ -119,7 +132,9 @@ struct VintagePreset: Identifiable {
                                     .init(width: 832, height: 624),
                                     .init(width: 1024, height: 768),
                                     .init(width: 1152, height: 870)],
-                      eraRange: 1999...2002),
+                      eraRange: 1999...2002,
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Mac OS X (2001): Safari, Camino, Firefox, IE 5.2 Mac.
         VintagePreset(id: "macosx", platform: .mac, osName: "Mac OS X", year: "2001",
                       htmlLevel: .minimal, imageQuality: 0.8,
@@ -128,16 +143,20 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1024, height: 768),
                                     .init(width: 1152, height: 870),
                                     .init(width: 1280, height: 1024)],
-                      eraRange: 2001...2005),
+                      eraRange: 2001...2005,
+                      supportedColorDepths: [.thousands],
+                      defaultColorDepth: .thousands),
         // ── PC ───────────────────────────────────────
         // Windows 3.1 (1992): Predates the web, but Mosaic ran on it via Win32s.
-        // Earliest useful web content: 1994–1996.
+        // Standard VGA was 16 colors.
         VintagePreset(id: "win31", platform: .pc, osName: "Windows 3.1", year: "1992",
                       htmlLevel: .aggressive, imageQuality: 0.3,
                       defaultResolution: .init(width: 640, height: 480),
                       resolutions: [.init(width: 640, height: 480),
                                     .init(width: 800, height: 600)],
-                      eraRange: 1994...1996),
+                      eraRange: 1994...1996,
+                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix],
+                      defaultColorDepth: .sixteenColor),
         // Windows 95 (1995): IE 3–4, Netscape 2–4.
         VintagePreset(id: "win95", platform: .pc, osName: "Windows 95", year: "1995",
                       htmlLevel: .moderate, imageQuality: 0.5,
@@ -145,7 +164,9 @@ struct VintagePreset: Identifiable {
                       resolutions: [.init(width: 640, height: 480),
                                     .init(width: 800, height: 600),
                                     .init(width: 1024, height: 768)],
-                      eraRange: 1995...1998),
+                      eraRange: 1995...1998,
+                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands],
+                      defaultColorDepth: .twoFiftySix),
         // Windows 98 (1998): IE 5–6, Netscape 4.7.
         VintagePreset(id: "win98", platform: .pc, osName: "Windows 98", year: "1998",
                       htmlLevel: .moderate, imageQuality: 0.6,
@@ -153,7 +174,9 @@ struct VintagePreset: Identifiable {
                       resolutions: [.init(width: 640, height: 480),
                                     .init(width: 800, height: 600),
                                     .init(width: 1024, height: 768)],
-                      eraRange: 1998...2001),
+                      eraRange: 1998...2001,
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Windows 2000 (2000): IE 5–6, early Firefox/Mozilla.
         VintagePreset(id: "win2000", platform: .pc, osName: "Windows 2000", year: "2000",
                       htmlLevel: .minimal, imageQuality: 0.7,
@@ -161,7 +184,9 @@ struct VintagePreset: Identifiable {
                       resolutions: [.init(width: 800, height: 600),
                                     .init(width: 1024, height: 768),
                                     .init(width: 1280, height: 1024)],
-                      eraRange: 2000...2003),
+                      eraRange: 2000...2003,
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Windows XP (2001): IE 6, Firefox 1–3, Opera.
         VintagePreset(id: "winxp", platform: .pc, osName: "Windows XP", year: "2001",
                       htmlLevel: .minimal, imageQuality: 0.8,
@@ -170,7 +195,9 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1024, height: 768),
                                     .init(width: 1280, height: 1024),
                                     .init(width: 1600, height: 1200)],
-                      eraRange: 2001...2006),
+                      eraRange: 2001...2006,
+                      supportedColorDepths: [.thousands],
+                      defaultColorDepth: .thousands),
     ]
 
     static func forPlatform(_ platform: VintagePlatform) -> [VintagePreset] {
@@ -194,6 +221,7 @@ private struct SavedSettings: Codable {
     var screenHeight: Int = 768
     var transcodingBypassDomains: String = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
     var minifyHTML: Bool = false
+    var colorDepth: String = "thousands"
 
     static var fileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -218,6 +246,26 @@ private struct SavedSettings: Codable {
     }
 }
 
+// Resilient decoder: missing keys use defaults instead of failing.
+// This prevents config resets when new fields are added in updates.
+extension SavedSettings {
+    init(from decoder: Decoder) throws {
+        self.init()
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        if let v = try c.decodeIfPresent(UInt16.self, forKey: .port) { port = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .waybackEnabled) { waybackEnabled = v }
+        if let v = try c.decodeIfPresent(Double.self, forKey: .waybackDateTimestamp) { waybackDateTimestamp = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .waybackToleranceMonths) { waybackToleranceMonths = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .platform) { platform = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .presetId) { presetId = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .screenWidth) { screenWidth = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .screenHeight) { screenHeight = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .transcodingBypassDomains) { transcodingBypassDomains = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .minifyHTML) { minifyHTML = v }
+        if let v = try c.decodeIfPresent(String.self, forKey: .colorDepth) { colorDepth = v }
+    }
+}
+
 // MARK: - App State
 
 @MainActor
@@ -235,6 +283,7 @@ class ProxyState: ObservableObject {
     @Published var resolution: ScreenResolution = ScreenResolution(width: 1024, height: 768)
     @Published var transcodingBypassDomainsText: String = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
     @Published var minifyHTML: Bool = false
+    @Published var colorDepth: ColorDepth = .thousands
     @Published var requestLog: [RequestLogEntry] = []
 
     var transcodingBypassDomains: Set<String> {
@@ -264,13 +313,17 @@ class ProxyState: ObservableObject {
         platform = VintagePlatform(rawValue: s.platform) ?? .mac
         if VintagePreset.all.contains(where: { $0.id == s.presetId }) { presetId = s.presetId }
         resolution = ScreenResolution(width: s.screenWidth, height: s.screenHeight)
-        // Migrate: if bypass domains are empty (old config), populate with defaults
-        if s.transcodingBypassDomains.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            transcodingBypassDomainsText = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
-        } else {
-            transcodingBypassDomainsText = s.transcodingBypassDomains
-        }
+        transcodingBypassDomainsText = s.transcodingBypassDomains
         minifyHTML = s.minifyHTML
+
+        // Load color depth, validating against the selected preset's capabilities
+        let preset = VintagePreset.all.first { $0.id == presetId } ?? VintagePreset.all[3]
+        if let depth = ColorDepth(rawValue: s.colorDepth), preset.supportedColorDepths.contains(depth) {
+            colorDepth = depth
+        } else {
+            colorDepth = preset.defaultColorDepth
+        }
+
         saveSettings() // Ensure config file exists on first launch
         startProxy()
     }
@@ -286,7 +339,8 @@ class ProxyState: ObservableObject {
             screenWidth: resolution.width,
             screenHeight: resolution.height,
             transcodingBypassDomains: transcodingBypassDomainsText,
-            minifyHTML: minifyHTML
+            minifyHTML: minifyHTML,
+            colorDepth: colorDepth.rawValue
         ).save()
     }
 
@@ -316,6 +370,7 @@ class ProxyState: ObservableObject {
             outputEncoding: outputEncoding,
             transcodingBypassDomains: transcodingBypassDomains,
             minifyHTML: minifyHTML,
+            colorDepth: colorDepth,
             onRequestLogged: server.sharedConfig.value.onRequestLogged
         )
         // Clear the temporal cache so sub-resources don't load from the old date
@@ -331,6 +386,7 @@ class ProxyState: ObservableObject {
             outputEncoding: outputEncoding,
             transcodingBypassDomains: transcodingBypassDomains,
             minifyHTML: minifyHTML,
+            colorDepth: colorDepth,
             onRequestLogged: { [weak self] entry in
                 Task { @MainActor in
                     self?.requestLog.insert(RequestLogEntry(
@@ -546,6 +602,20 @@ struct ContentView: View {
                             Text(res.label).tag(res)
                         }
                     }
+
+                    if state.selectedPreset.supportedColorDepths.count > 1 {
+                        HStack {
+                            Picker("Color Depth", selection: $state.colorDepth) {
+                                ForEach(state.selectedPreset.supportedColorDepths, id: \.self) { depth in
+                                    Text(depth.displayName).tag(depth)
+                                }
+                            }
+                            InfoPopover(
+                                title: "Display Color Depth",
+                                text: "Matches image output to your vintage display's color capabilities.\n\nB&W (1-bit): Floyd-Steinberg dithering for monochrome screens (Mac Plus, SE, Classic). Classic halftone newspaper look.\n\n16 Colors: Ordered dithering with the standard VGA palette. For Windows 3.1 and early VGA displays.\n\n256 Colors: GIF palette quantization for 8-bit displays common in the mid-90s.\n\nThousands+: Full-color JPEG output for 16-bit or 24-bit displays."
+                            )
+                        }
+                    }
                 }
                 .padding(4)
             } label: {
@@ -594,9 +664,12 @@ struct ContentView: View {
             state.saveSettings(); state.syncConfig()
         }
         .onChange(of: state.presetId) {
-            // Cascade: pick default resolution for this OS
+            // Cascade: pick default resolution and validate color depth for this OS
             if let preset = VintagePreset.all.first(where: { $0.id == state.presetId }) {
                 state.resolution = preset.defaultResolution
+                if !preset.supportedColorDepths.contains(state.colorDepth) {
+                    state.colorDepth = preset.defaultColorDepth
+                }
             }
             state.saveSettings(); state.syncConfig()
         }
@@ -612,6 +685,7 @@ struct ContentView: View {
         .onChange(of: state.waybackToleranceMonths) { state.saveSettings(); state.syncConfig() }
         .onChange(of: state.port) { state.saveSettings() }
         .onChange(of: state.minifyHTML) { state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.colorDepth) { state.saveSettings(); state.syncConfig() }
         .onChange(of: state.transcodingBypassDomainsText) { state.saveSettings(); state.syncConfig() }
     }
 

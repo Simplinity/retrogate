@@ -5,6 +5,32 @@ import ImageIO
 import UniformTypeIdentifiers
 import AppKit
 
+// MARK: - Color Depth
+
+/// Display color depth for vintage machines.
+/// Controls image dithering and palette reduction to match the target hardware.
+public enum ColorDepth: String, Sendable, Codable, CaseIterable, Hashable {
+    /// 1-bit black & white — Floyd-Steinberg error-diffusion dithering.
+    case monochrome = "monochrome"
+    /// 16 colors — ordered (Bayer 4x4) dithering with standard VGA palette.
+    case sixteenColor = "16color"
+    /// 256 colors — standard GIF palette quantization.
+    case twoFiftySix = "256color"
+    /// Thousands+ (16-bit/24-bit) — full color, no reduction.
+    case thousands = "thousands"
+
+    public var displayName: String {
+        switch self {
+        case .monochrome: return "B&W (1-bit)"
+        case .sixteenColor: return "16 Colors"
+        case .twoFiftySix: return "256 Colors"
+        case .thousands: return "Thousands+"
+        }
+    }
+}
+
+// MARK: - Image Transcoder
+
 /// Converts modern image formats (WebP, AVIF, HEIF) to vintage-compatible
 /// formats (JPEG, GIF) and resizes to configurable max dimensions.
 ///
@@ -21,12 +47,14 @@ public struct ImageTranscoder {
     private let maxWidth: Int
     private let maxHeight: Int
     private let outputFormat: OutputFormat
+    private let colorDepth: ColorDepth
     private let logger: Logger
 
-    public init(maxWidth: Int = 640, maxHeight: Int = 480, outputFormat: OutputFormat = .jpeg(quality: 0.6)) {
+    public init(maxWidth: Int = 640, maxHeight: Int = 480, outputFormat: OutputFormat = .jpeg(quality: 0.6), colorDepth: ColorDepth = .thousands) {
         self.maxWidth = maxWidth
         self.maxHeight = maxHeight
         self.outputFormat = outputFormat
+        self.colorDepth = colorDepth
         var logger = Logger(label: "app.retrogate.image")
         logger.logLevel = .info
         self.logger = logger
@@ -45,9 +73,6 @@ public struct ImageTranscoder {
             cgImage = img
         } else if Self.isSVG(data),
                   let img = Self.renderSVG(data, maxWidth: maxWidth, maxHeight: maxHeight) {
-            // SVG: NSImage can decode it; CGImageSource cannot.
-            // NSImage(data:) + cgImage(forProposedRect:) is thread-safe —
-            // only lockFocus/unlockFocus is not.
             cgImage = img
         } else {
             logger.warning("Failed to decode image data (\(data.count) bytes)")
@@ -78,18 +103,39 @@ public struct ImageTranscoder {
             return nil
         }
 
+        // For reduced color depths, fill white background (transparent areas become white)
+        if colorDepth != .thousands {
+            ctx.setFillColor(gray: 1, alpha: 1)
+            ctx.fill(CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
+        }
+
         ctx.interpolationQuality = .high
         ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
+
+        // Apply dithering for reduced color depths
+        if colorDepth != .thousands, let pixelData = ctx.data {
+            switch colorDepth {
+            case .monochrome:
+                Self.floydSteinbergDither(pixels: pixelData, width: scaledWidth, height: scaledHeight, bytesPerRow: ctx.bytesPerRow)
+            case .sixteenColor:
+                Self.orderedDither16(pixels: pixelData, width: scaledWidth, height: scaledHeight, bytesPerRow: ctx.bytesPerRow)
+            case .twoFiftySix, .thousands:
+                break
+            }
+        }
 
         guard let resizedImage = ctx.makeImage() else {
             logger.warning("Failed to create resized CGImage")
             return nil
         }
 
+        // For reduced color depths, force GIF (palette-based format preserves dithered pixels)
+        let effectiveFormat = (colorDepth != .thousands) ? OutputFormat.gif : outputFormat
+
         // Encode to target format using ImageIO (thread-safe)
         let outputData = NSMutableData()
         let (utType, mimeType, properties): (CFString, String, CFDictionary) = {
-            switch outputFormat {
+            switch effectiveFormat {
             case .jpeg(let quality):
                 let props = [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary
                 return (UTType.jpeg.identifier as CFString, "image/jpeg", props)
@@ -108,30 +154,40 @@ public struct ImageTranscoder {
             return nil
         }
 
-        logger.info("Transcoded \(originalWidth)x\(originalHeight) → \(scaledWidth)x\(scaledHeight) \(mimeType) (\(outputData.length) bytes)")
+        let depthLabel = colorDepth != .thousands ? " [\(colorDepth.displayName)]" : ""
+        logger.info("Transcoded \(originalWidth)x\(originalHeight) → \(scaledWidth)x\(scaledHeight) \(mimeType)\(depthLabel) (\(outputData.length) bytes)")
         return (outputData as Data, mimeType)
     }
-    
+
     /// Calculate scaled dimensions maintaining aspect ratio.
     private func scaledSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int) -> (Int, Int) {
         guard width > maxWidth || height > maxHeight else {
             return (width, height)
         }
-        
+
         let widthRatio = Double(maxWidth) / Double(width)
         let heightRatio = Double(maxHeight) / Double(height)
         let ratio = min(widthRatio, heightRatio)
-        
+
         return (Int(Double(width) * ratio), Int(Double(height) * ratio))
     }
-    
+
     /// Detect if data is a modern format that needs transcoding,
     /// or an already-compatible format (JPEG, GIF) that can pass through.
     /// When `forceFormat` is true, also transcode JPEG↔GIF conversions
     /// (e.g., browser only accepts GIF but image is JPEG).
     public func needsTranscoding(_ data: Data, forceFormat: Bool = false) -> Bool {
+        // Dithering modes always require full transcoding
+        switch colorDepth {
+        case .monochrome, .sixteenColor:
+            return true
+        case .twoFiftySix:
+            return Self.detectFormat(data) != .gif
+        case .thousands:
+            break
+        }
+
         let detected = Self.detectFormat(data)
-        // If forcing a specific output format, check if we need to convert
         if forceFormat {
             switch (detected, outputFormat) {
             case (.jpeg, .jpeg): return false  // already JPEG, want JPEG
@@ -187,5 +243,101 @@ public struct ImageTranscoder {
         case .svg:  return "image/svg+xml"
         case .other: return "application/octet-stream"
         }
+    }
+
+    // MARK: - Floyd-Steinberg Dithering (1-bit B&W)
+
+    /// Error-diffusion dithering to 1-bit black & white.
+    /// Produces the classic Mac Plus/SE halftone look.
+    private static func floydSteinbergDither(pixels: UnsafeMutableRawPointer, width: Int, height: Int, bytesPerRow: Int) {
+        let buf = pixels.assumingMemoryBound(to: UInt8.self)
+
+        // Convert to grayscale float buffer for error diffusion
+        var gray = [Float](repeating: 0, count: width * height)
+        for y in 0..<height {
+            for x in 0..<width {
+                let off = y * bytesPerRow + x * 4
+                // ITU-R BT.601 luminance weights
+                gray[y * width + x] = 0.299 * Float(buf[off]) + 0.587 * Float(buf[off + 1]) + 0.114 * Float(buf[off + 2])
+            }
+        }
+
+        // Error diffusion: threshold each pixel, distribute quantization error to neighbors
+        //          * 7/16
+        //   3/16 5/16 1/16
+        for y in 0..<height {
+            for x in 0..<width {
+                let i = y * width + x
+                let old = gray[i]
+                let new: Float = old > 127.5 ? 255 : 0
+                let err = old - new
+                gray[i] = new
+
+                if x + 1 < width                    { gray[i + 1]                     += err * 7 / 16 }
+                if y + 1 < height && x > 0          { gray[(y + 1) * width + (x - 1)] += err * 3 / 16 }
+                if y + 1 < height                    { gray[(y + 1) * width + x]       += err * 5 / 16 }
+                if y + 1 < height && x + 1 < width  { gray[(y + 1) * width + (x + 1)] += err * 1 / 16 }
+            }
+        }
+
+        // Write B&W pixels back to RGBA buffer
+        for y in 0..<height {
+            for x in 0..<width {
+                let off = y * bytesPerRow + x * 4
+                let v: UInt8 = gray[y * width + x] > 127.5 ? 255 : 0
+                buf[off] = v; buf[off + 1] = v; buf[off + 2] = v; buf[off + 3] = 255
+            }
+        }
+    }
+
+    // MARK: - Ordered Dithering (16 Colors)
+
+    /// Bayer 4x4 threshold matrix (normalized to 0-1).
+    private static let bayerMatrix: [[Float]] = [
+        [ 0.0/16,  8.0/16,  2.0/16, 10.0/16],
+        [12.0/16,  4.0/16, 14.0/16,  6.0/16],
+        [ 3.0/16, 11.0/16,  1.0/16,  9.0/16],
+        [15.0/16,  7.0/16, 13.0/16,  5.0/16],
+    ]
+
+    /// Standard VGA 16-color palette (CGA/EGA/VGA compatible).
+    private static let vga16: [(UInt8, UInt8, UInt8)] = [
+        (  0,   0,   0), (  0,   0, 170), (  0, 170,   0), (  0, 170, 170),
+        (170,   0,   0), (170,   0, 170), (170,  85,   0), (170, 170, 170),
+        ( 85,  85,  85), ( 85,  85, 255), ( 85, 255,  85), ( 85, 255, 255),
+        (255,  85,  85), (255,  85, 255), (255, 255,  85), (255, 255, 255),
+    ]
+
+    /// Ordered (Bayer) dithering to 16-color VGA palette.
+    private static func orderedDither16(pixels: UnsafeMutableRawPointer, width: Int, height: Int, bytesPerRow: Int) {
+        let buf = pixels.assumingMemoryBound(to: UInt8.self)
+        let spread: Float = 64
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let off = y * bytesPerRow + x * 4
+                let threshold = bayerMatrix[y & 3][x & 3]
+                let ditherOffset = (threshold - 0.5) * spread
+
+                let r = Float(buf[off])     + ditherOffset
+                let g = Float(buf[off + 1]) + ditherOffset
+                let b = Float(buf[off + 2]) + ditherOffset
+
+                let nearest = nearestVGA16(r: r, g: g, b: b)
+                buf[off] = nearest.0; buf[off + 1] = nearest.1; buf[off + 2] = nearest.2; buf[off + 3] = 255
+            }
+        }
+    }
+
+    /// Find nearest color in the VGA 16-color palette by Euclidean distance.
+    private static func nearestVGA16(r: Float, g: Float, b: Float) -> (UInt8, UInt8, UInt8) {
+        var bestDist: Float = .greatestFiniteMagnitude
+        var best = vga16[0]
+        for c in vga16 {
+            let dr = r - Float(c.0), dg = g - Float(c.1), db = b - Float(c.2)
+            let d = dr * dr + dg * dg + db * db
+            if d < bestDist { bestDist = d; best = c }
+        }
+        return best
     }
 }
