@@ -89,7 +89,6 @@ VM networking (slirp) drops after a while. Restart SheepShaver to fix.
 - [x] 11. Temporal consistency — track resolved Wayback date per page, load sub-resources from same date
 - [x] 12. Automatic Wayback fallback for live-web 404s — if direct fetch returns 403/404/410, try Wayback Machine
 - [x] 13. Redirect loop/carousel detection — track recent URLs, detect HTTP<->HTTPS loops, break them
-- [ ] 14. Site-specific gateway extensions — purpose-built handlers for Wikipedia, Reddit, search engines
 - [x] 16. SVG-to-raster conversion — convert SVG images to PNG/GIF for vintage browsers
 - [x] 17. Built-in search gateway at `http://retrogate/search` — wrap DuckDuckGo in vintage HTML
 - [x] 18. Response caching — cache Wayback responses locally (archived content never changes)
@@ -110,7 +109,6 @@ VM networking (slirp) drops after a while. Restart SheepShaver to fix.
 - [ ] 35. CSS vendor prefix injection for medium-vintage browsers (Firefox 3.5-16, old Safari)
 
 ### V2 Features (future release)
-- [ ] 14. Site-specific gateway extensions — purpose-built handlers for Wikipedia, Reddit, search engines
 - [ ] 24. DNS interception mode — point vintage Mac's DNS at host, no proxy config needed
 - [ ] 26. Settings page accessible from vintage browser — configure RetroGate from inside Mac OS 9 (bidirectional sync with SwiftUI app)
 - [ ] 28. Dead service endpoint redirection — Windows Update, Netscape start pages, etc. to revivals
