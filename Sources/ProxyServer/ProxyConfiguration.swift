@@ -57,7 +57,7 @@ public struct ProxyConfiguration: Sendable {
         outputEncoding: OutputEncoding = .isoLatin1,
         transcodingBypassDomains: Set<String> = [],
         minifyHTML: Bool = false,
-        colorDepth: ColorDepth = .thousands,
+        colorDepth: ColorDepth = .millions,
         onRequestLogged: (@Sendable (RequestLogData) -> Void)? = nil
     ) {
         self.browsingMode = browsingMode
