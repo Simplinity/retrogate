@@ -73,37 +73,7 @@ VM networking (slirp) drops after a while. Restart SheepShaver to fix.
 
 ## Feature Roadmap (TODO)
 
-### Quick Wins (high impact, easy)
-- [x] 1. `<noscript>` content preservation — unwrap instead of delete
-- [x] 2. CSP / SRI / CORS stripping — remove `integrity=`, `crossorigin=`, CSP meta tags
-- [x] 3. Cookie `Secure` flag stripping — strip from Set-Cookie headers
-- [x] 4. Archive.org rate limiting + retry with exponential backoff (3 retries, 0.5s/1s/2s)
-- [x] 5. Broader redirect parameter extraction — 15+ redirect param names
-- [x] 6. Accept header-based image format selection — inspect browser's Accept header, don't hardcode JPEG
-- [x] 7. `@font-face` web font stripping from CSS responses
-- [x] 8. JavaScript redirect detection — `window.location` → `<meta refresh>` conversion
-- [x] 9. `<strong>` to `<b>`, `<em>` to `<i>` conversion
-- [x] 10. Unicode smart character cleanup — curly quotes, em-dashes, ellipses, etc.
-
-### Medium Features (good impact, moderate effort)
-- [x] 11. Temporal consistency — track resolved Wayback date per page, load sub-resources from same date
-- [x] 12. Automatic Wayback fallback for live-web 404s — if direct fetch returns 403/404/410, try Wayback Machine
-- [x] 13. Redirect loop/carousel detection — track recent URLs, detect HTTP<->HTTPS loops, break them
-- [x] 16. SVG-to-raster conversion — convert SVG images to PNG/GIF for vintage browsers
-- [x] 17. Built-in search gateway at `http://retrogate/search` — wrap DuckDuckGo in vintage HTML
-- [x] 18. Response caching — cache Wayback responses locally (archived content never changes)
-- [x] 19. MacRoman output encoding for Mac presets (not just iso-8859-1)
-- [x] 20. `Host:` header injection for HTTP/1.0 browsers that don't send it
-- [x] 21. Floyd-Steinberg dithering for 1-bit GIF output (Mac Plus/SE/Classic)
-- [x] 22. Image dithering option for low-color displays
-
-### Ambitious Features (differentiating, more work)
-- [x] 25. PAC file generation — Proxy Auto-Configuration for vintage browsers
-- [x] 27. Built-in start page / portal at `http://retrogate/` — curated links, search, weather
-- [x] 32. Wayback toolbar removal via comment markers (more reliable than CSS selectors)
-- [x] 33. Domain whitelist for transcoding bypass — retro-friendly sites skip transcoding
-- [x] 36. Chunked Transfer-Encoding de-chunking for HTTP/1.0 clients
-- [x] 37. HTML minification for bandwidth savings on slow connections
+### V1 Open
 - [ ] 35. CSS vendor prefix injection for medium-vintage browsers (Firefox 3.5-16, old Safari)
 
 ### V2 Features (future release)
