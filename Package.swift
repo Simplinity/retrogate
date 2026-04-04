@@ -41,6 +41,7 @@ let package = Package(
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "NIOExtras", package: "swift-nio-extras"),
                 .product(name: "Logging", package: "swift-log"),
+                .product(name: "SwiftSoup", package: "SwiftSoup"),
                 "HTMLTranscoder",
                 "ImageTranscoder",
                 "WaybackBridge",

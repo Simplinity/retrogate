@@ -1,5 +1,6 @@
 import XCTest
 @testable import HTMLTranscoder
+@testable import ImageTranscoder
 @testable import WaybackBridge
 
 final class HTMLTranscoderTests: XCTestCase {
@@ -147,6 +148,52 @@ final class HTMLTranscoderTests: XCTestCase {
     }
 }
 
+final class ImageTranscoderTests: XCTestCase {
+
+    func testDetectFormatJPEG() {
+        let jpegData = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10])
+        XCTAssertEqual(ImageTranscoder.detectFormat(jpegData), .jpeg)
+        XCTAssertEqual(ImageTranscoder.mimeType(for: jpegData), "image/jpeg")
+    }
+
+    func testDetectFormatGIF() {
+        let gifData = Data([0x47, 0x49, 0x46, 0x38, 0x39, 0x61])
+        XCTAssertEqual(ImageTranscoder.detectFormat(gifData), .gif)
+        XCTAssertEqual(ImageTranscoder.mimeType(for: gifData), "image/gif")
+    }
+
+    func testDetectFormatPNG() {
+        let pngData = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])
+        XCTAssertEqual(ImageTranscoder.detectFormat(pngData), .png)
+        XCTAssertEqual(ImageTranscoder.mimeType(for: pngData), "image/png")
+    }
+
+    func testNeedsTranscodingPassThrough() {
+        let transcoder = ImageTranscoder(outputFormat: .jpeg(quality: 0.6))
+        let jpegData = Data([0xFF, 0xD8, 0xFF, 0xE0])
+        let gifData = Data([0x47, 0x49, 0x46, 0x38])
+
+        // JPEG and GIF should pass through without forced format
+        XCTAssertFalse(transcoder.needsTranscoding(jpegData))
+        XCTAssertFalse(transcoder.needsTranscoding(gifData))
+
+        // PNG should be transcoded
+        let pngData = Data([0x89, 0x50, 0x4E, 0x47])
+        XCTAssertTrue(transcoder.needsTranscoding(pngData))
+    }
+
+    func testNeedsTranscodingForceFormat() {
+        // GIF transcoder should force-transcode a JPEG
+        let gifTranscoder = ImageTranscoder(outputFormat: .gif)
+        let jpegData = Data([0xFF, 0xD8, 0xFF, 0xE0])
+        XCTAssertTrue(gifTranscoder.needsTranscoding(jpegData, forceFormat: true))
+
+        // But not a GIF
+        let gifData = Data([0x47, 0x49, 0x46, 0x38])
+        XCTAssertFalse(gifTranscoder.needsTranscoding(gifData, forceFormat: true))
+    }
+}
+
 final class WaybackBridgeTests: XCTestCase {
     
     func testURLRewriting() {
@@ -159,12 +206,61 @@ final class WaybackBridgeTests: XCTestCase {
         let original = URL(string: "http://apple.com")!
         let rewritten = bridge.rewriteURL(original)
         
-        XCTAssertEqual(rewritten.absoluteString, "https://web.archive.org/web/19970615/http://apple.com")
+        // id_ suffix = identity mode (raw archived content, no URL rewriting)
+        XCTAssertEqual(rewritten.absoluteString, "https://web.archive.org/web/19970615id_/http://apple.com")
     }
     
     func testIsWaybackURL() {
         let bridge = WaybackBridge()
         XCTAssertTrue(bridge.isWaybackURL(URL(string: "https://web.archive.org/web/2001/http://example.com")!))
         XCTAssertFalse(bridge.isWaybackURL(URL(string: "http://example.com")!))
+    }
+
+    func testCommentMarkerToolbarRemoval() throws {
+        let html = """
+        <html><body>
+        <h1>Hello</h1>
+        <!-- BEGIN WAYBACK TOOLBAR INSERT -->
+        <div id="wm-ipp-base">Toolbar stuff here</div>
+        <script>wayback_toolbar();</script>
+        <!-- END WAYBACK TOOLBAR INSERT -->
+        <p>Content</p>
+        </body></html>
+        """
+        let bridge = WaybackBridge()
+        let cleaned = try bridge.cleanWaybackResponse(html)
+        XCTAssertFalse(cleaned.contains("Toolbar stuff"))
+        XCTAssertFalse(cleaned.contains("wayback_toolbar"))
+        XCTAssertTrue(cleaned.contains("Hello"))
+        XCTAssertTrue(cleaned.contains("Content"))
+    }
+}
+
+// MARK: - ProxyHandler Tests
+
+@testable import ProxyServer
+
+final class ProxyHandlerTests: XCTestCase {
+
+    func testHTMLMinification() {
+        let html = """
+        <html>
+        <body>
+          <!-- This is a comment -->
+          <p>Hello     World</p>
+
+
+          <p>Another    paragraph</p>
+        </body>
+        </html>
+        """
+        let minified = ProxyHTTPHandler.minifyHTML(html)
+        // Comments should be removed
+        XCTAssertFalse(minified.contains("This is a comment"))
+        // Content preserved
+        XCTAssertTrue(minified.contains("Hello"))
+        XCTAssertTrue(minified.contains("World"))
+        // Multiple spaces collapsed
+        XCTAssertFalse(minified.contains("     "))
     }
 }

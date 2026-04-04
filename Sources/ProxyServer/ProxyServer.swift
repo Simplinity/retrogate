@@ -27,12 +27,18 @@ public final class ProxyServer: @unchecked Sendable {
     private let host: String
     private let port: Int
     public let sharedConfig: SharedConfiguration
+    public let temporalCache: TemporalCache
+    public let redirectTracker: RedirectTracker
+    public let responseCache: ResponseCache
     private var serverChannel: Channel?
 
     public init(host: String = "0.0.0.0", port: Int = 8080, configuration: ProxyConfiguration = ProxyConfiguration()) {
         self.host = host
         self.port = port
         self.sharedConfig = SharedConfiguration(configuration)
+        self.temporalCache = TemporalCache()
+        self.redirectTracker = RedirectTracker()
+        self.responseCache = ResponseCache()
         self.group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         var logger = Logger(label: "app.retrogate.proxy")
         logger.logLevel = .info
@@ -42,13 +48,16 @@ public final class ProxyServer: @unchecked Sendable {
     /// Start the proxy server. Returns after binding (does not block until shutdown).
     public func start() async throws {
         let sharedConfig = self.sharedConfig
+        let temporalCache = self.temporalCache
+        let redirectTracker = self.redirectTracker
+        let responseCache = self.responseCache
         let logger = self.logger
         let bootstrap = ServerBootstrap(group: group)
             .serverChannelOption(.backlog, value: 256)
             .serverChannelOption(.socketOption(.so_reuseaddr), value: 1)
             .childChannelInitializer { channel in
                 channel.pipeline.configureHTTPServerPipeline().flatMap {
-                    channel.pipeline.addHandler(ProxyHTTPHandler(logger: logger, sharedConfig: sharedConfig))
+                    channel.pipeline.addHandler(ProxyHTTPHandler(logger: logger, sharedConfig: sharedConfig, temporalCache: temporalCache, redirectTracker: redirectTracker, responseCache: responseCache))
                 }
             }
             .childChannelOption(.socketOption(.so_reuseaddr), value: 1)

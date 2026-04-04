@@ -33,6 +33,7 @@ public struct HTMLTranscoder {
         
         // These run for ALL levels — charset and image URLs must always be fixed
         // for vintage browsers to work at all
+        try extractJSRedirects(doc)
         try stripScripts(doc)
         try setCharsetMeta(doc)
         try rewriteImageSources(doc, baseURL: baseURL)
@@ -54,12 +55,55 @@ public struct HTMLTranscoder {
     }
     
     // MARK: - Transformation Steps
-    
-    /// Remove all <script>, <noscript>, <canvas>, <video>, <audio>, <svg> tags
+
+    /// Detect JavaScript redirects (window.location = "url") BEFORE stripping scripts,
+    /// and convert them to <meta http-equiv="refresh"> which vintage browsers support.
+    /// Without this, pages that redirect via JS show up blank after script stripping.
+    private func extractJSRedirects(_ doc: Document) throws {
+        let patterns = [
+            #"window\.location\s*=\s*['"](https?://[^'"]+)['"]"#,
+            #"window\.location\.href\s*=\s*['"](https?://[^'"]+)['"]"#,
+            #"window\.location\.replace\(\s*['"](https?://[^'"]+)['"]\s*\)"#,
+            #"document\.location\s*=\s*['"](https?://[^'"]+)['"]"#,
+            #"document\.location\.href\s*=\s*['"](https?://[^'"]+)['"]"#,
+        ]
+        for script in try doc.select("script") {
+            let text = try script.html()
+            for pattern in patterns {
+                guard let regex = try? NSRegularExpression(pattern: pattern),
+                      let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+                      let urlRange = Range(match.range(at: 1), in: text) else { continue }
+                let redirectURL = String(text[urlRange])
+                // Inject a meta refresh that vintage browsers will follow
+                if let head = doc.head() {
+                    try head.append("<meta http-equiv=\"refresh\" content=\"0;url=\(redirectURL)\">")
+                }
+                logger.debug("Extracted JS redirect to \(redirectURL)")
+                return // Only use the first redirect found
+            }
+        }
+    }
+
+    /// Remove dangerous/unsupported elements.
+    /// We keep <embed> and <object> because they were used for QuickTime movies
+    /// in the 90s — Mac OS 9 can actually play those through the proxy.
+    /// <applet> (Java) is stripped because it crashes SheepShaver's MRJ.
     private func stripScripts(_ doc: Document) throws {
-        let tagsToRemove = ["script", "noscript", "canvas", "video", "audio",
+        // Unwrap <noscript> tags BEFORE removing scripts — modern sites hide
+        // real <img> tags inside <noscript> as lazy-loading fallbacks.
+        // Since we strip all <script>, the noscript content is what we need.
+        for noscript in try doc.select("noscript") {
+            if let parent = noscript.parent() {
+                // SwiftSoup: unwrap replaces the tag with its children
+                try noscript.unwrap()
+                _ = parent // keep reference alive
+            }
+        }
+
+        let tagsToRemove = ["script", "canvas", "video", "audio",
                             "svg", "template", "slot", "dialog", "details",
-                            "summary", "picture", "source"]
+                            "summary", "picture", "source",
+                            "applet"]
         for tag in tagsToRemove {
             try doc.select(tag).remove()
         }
@@ -70,6 +114,13 @@ public struct HTMLTranscoder {
             try element.removeAttr("onerror")
             try element.removeAttr("onmouseover")
         }
+
+        // Strip CSP meta tags, SRI integrity attributes, and CORS attributes
+        // — these block resource loading when proxied through HTTP
+        try doc.select("meta[http-equiv=Content-Security-Policy]").remove()
+        for el in try doc.select("[integrity]") { try el.removeAttr("integrity") }
+        for el in try doc.select("[crossorigin]") { try el.removeAttr("crossorigin") }
+
         logger.debug("Stripped scripts and modern elements")
     }
     
@@ -80,7 +131,7 @@ public struct HTMLTranscoder {
         logger.debug("Removed CSS stylesheets")
     }
     
-    /// Convert HTML5 semantic tags to divs/tables
+    /// Convert HTML5 semantic tags to divs/tables and HTML4 tags to HTML 3.2
     private func downgradeSemanticTags(_ doc: Document) throws {
         let semanticTags = ["nav", "section", "article", "aside", "header",
                             "footer", "main", "figure", "figcaption", "mark",
@@ -90,6 +141,9 @@ public struct HTMLTranscoder {
                 try element.tagName("div")
             }
         }
+        // HTML4 inline tags → HTML 3.2 equivalents
+        for el in try doc.select("strong") { try el.tagName("b") }
+        for el in try doc.select("em") { try el.tagName("i") }
         logger.debug("Downgraded semantic HTML5 tags to divs")
     }
     
@@ -274,10 +328,15 @@ public struct HTMLTranscoder {
             if let src = try? img.attr("src"), !src.isEmpty {
                 // Resolve relative URLs
                 let resolved = URL(string: src, relativeTo: baseURL)?.absoluteString ?? src
-                // Rewrite to proxy's image endpoint with size constraint
                 try img.attr("src", resolved)
-                try img.attr("width", "\(maxImageWidth)")
-                // Remove srcset (vintage browsers don't support it)
+                // Only constrain images that are wider than maxImageWidth
+                if let w = try? Int(img.attr("width")), w > maxImageWidth {
+                    let ratio = Double(maxImageWidth) / Double(w)
+                    if let h = try? Int(img.attr("height")) {
+                        try img.attr("height", "\(Int(Double(h) * ratio))")
+                    }
+                    try img.attr("width", "\(maxImageWidth)")
+                }
                 try img.removeAttr("srcset")
                 try img.removeAttr("loading")
             }
