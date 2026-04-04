@@ -100,21 +100,25 @@ VM networking (slirp) drops after a while. Restart SheepShaver to fix.
 - [x] 22. Image dithering option for low-color displays
 
 ### Ambitious Features (differentiating, more work)
-- [ ] 23. Configurable rule engine — declarative regex find/replace rules by URL/UA/Content-Type
-- [ ] 24. DNS interception mode — point vintage Mac's DNS at host, no proxy config needed
 - [x] 25. PAC file generation — Proxy Auto-Configuration for vintage browsers
-- [ ] 26. Settings page accessible from vintage browser — configure RetroGate from inside Mac OS 9
 - [x] 27. Built-in start page / portal at `http://retrogate/` — curated links, search, weather
+- [x] 32. Wayback toolbar removal via comment markers (more reliable than CSS selectors)
+- [x] 33. Domain whitelist for transcoding bypass — retro-friendly sites skip transcoding
+- [x] 36. Chunked Transfer-Encoding de-chunking for HTTP/1.0 clients
+- [x] 37. HTML minification for bandwidth savings on slow connections
+- [ ] 23. Configurable rule engine — declarative regex find/replace rules by URL/UA/Content-Type
+- [ ] 34. Browser-specific presets (MacWeb 2, Netscape 2, IE 3, etc.) keyed on User-Agent
+- [ ] 35. CSS vendor prefix injection for medium-vintage browsers (Firefox 3.5-16, old Safari)
+
+### V2 Features (future release)
+- [ ] 14. Site-specific gateway extensions — purpose-built handlers for Wikipedia, Reddit, search engines
+- [ ] 15. Readability extraction mode — Mozilla Readability-style "reader view" as fallback for garbage transcoding
+- [ ] 24. DNS interception mode — point vintage Mac's DNS at host, no proxy config needed
+- [ ] 26. Settings page accessible from vintage browser — configure RetroGate from inside Mac OS 9 (bidirectional sync with SwiftUI app)
 - [ ] 28. Dead service endpoint redirection — Windows Update, Netscape start pages, etc. to revivals
 - [ ] 29. FTP-to-HTTP bridge — web-based FTP browser for vintage Mac FTP clients
 - [ ] 30. Protoweb integration — check hand-restored vintage sites before falling back to Wayback
 - [ ] 31. Video transcoding pipeline — yt-dlp + ffmpeg for QuickTime-compatible video
-- [x] 32. Wayback toolbar removal via comment markers (more reliable than CSS selectors)
-- [x] 33. Domain whitelist for transcoding bypass — retro-friendly sites skip transcoding
-- [ ] 34. Browser-specific presets (MacWeb 2, Netscape 2, IE 3, etc.) keyed on User-Agent
-- [ ] 35. CSS vendor prefix injection for medium-vintage browsers (Firefox 3.5-16, old Safari)
-- [x] 36. Chunked Transfer-Encoding de-chunking for HTTP/1.0 clients
-- [x] 37. HTML minification for bandwidth savings on slow connections
 - [ ] 38. Transliteration tables for non-Latin scripts
 - [ ] 39. Server-side rendering with ISMAP as nuclear fallback option
 - [ ] 40. Multi-protocol suite (IRC, NNTP, AIM revival)
