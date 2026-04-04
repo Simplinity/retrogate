@@ -192,46 +192,6 @@ final class ImageTranscoderTests: XCTestCase {
         let gifData = Data([0x47, 0x49, 0x46, 0x38])
         XCTAssertFalse(gifTranscoder.needsTranscoding(gifData, forceFormat: true))
     }
-
-    func testNeedsTranscodingColorDepthModes() {
-        let jpegData = Data([0xFF, 0xD8, 0xFF, 0xE0])
-        let gifData = Data([0x47, 0x49, 0x46, 0x38])
-
-        // Monochrome, 16-color, and Thousands always need transcoding
-        let monoTranscoder = ImageTranscoder(colorDepth: .monochrome)
-        XCTAssertTrue(monoTranscoder.needsTranscoding(jpegData))
-        XCTAssertTrue(monoTranscoder.needsTranscoding(gifData))
-
-        let sixteenTranscoder = ImageTranscoder(colorDepth: .sixteenColor)
-        XCTAssertTrue(sixteenTranscoder.needsTranscoding(jpegData))
-
-        let thousandsTranscoder = ImageTranscoder(colorDepth: .thousands)
-        XCTAssertTrue(thousandsTranscoder.needsTranscoding(jpegData))
-        XCTAssertTrue(thousandsTranscoder.needsTranscoding(gifData))
-
-        // 256-color only needs transcoding if not already GIF
-        let twoFiftySixTranscoder = ImageTranscoder(colorDepth: .twoFiftySix)
-        XCTAssertTrue(twoFiftySixTranscoder.needsTranscoding(jpegData))
-        XCTAssertFalse(twoFiftySixTranscoder.needsTranscoding(gifData))
-
-        // Millions passes through JPEG and GIF (same as old default behavior)
-        let millionsTranscoder = ImageTranscoder(colorDepth: .millions)
-        XCTAssertFalse(millionsTranscoder.needsTranscoding(jpegData))
-        XCTAssertFalse(millionsTranscoder.needsTranscoding(gifData))
-    }
-
-    func testColorDepthRawValues() {
-        // Verify raw values match what config.json stores
-        XCTAssertEqual(ColorDepth.monochrome.rawValue, "monochrome")
-        XCTAssertEqual(ColorDepth.sixteenColor.rawValue, "16color")
-        XCTAssertEqual(ColorDepth.twoFiftySix.rawValue, "256color")
-        XCTAssertEqual(ColorDepth.thousands.rawValue, "16bit")
-        XCTAssertEqual(ColorDepth.millions.rawValue, "millions")
-
-        // Verify display names match classic Mac OS terminology
-        XCTAssertEqual(ColorDepth.thousands.displayName, "Thousands")
-        XCTAssertEqual(ColorDepth.millions.displayName, "Millions")
-    }
 }
 
 final class WaybackBridgeTests: XCTestCase {

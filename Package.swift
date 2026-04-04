@@ -7,7 +7,11 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "RetroGate", targets: ["RetroGate"])
+        .executable(name: "RetroGate", targets: ["RetroGate"]),
+        // Library products for Xcode app target linking
+        .library(name: "ProxyServer", targets: ["ProxyServer"]),
+        .library(name: "HTMLTranscoder", targets: ["HTMLTranscoder"]),
+        .library(name: "ImageTranscoder", targets: ["ImageTranscoder"]),
     ],
     dependencies: [
         // High-performance async HTTP server

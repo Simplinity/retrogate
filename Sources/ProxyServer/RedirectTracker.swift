@@ -17,10 +17,10 @@ public final class RedirectTracker: @unchecked Sendable {
     private let windowSeconds: TimeInterval = 10
 
     /// How many times the same URL can appear in the window before
-    /// we declare it a loop. 3 = third visit triggers detection.
-    /// (2 was too aggressive — legitimate reloads and browser retries
-    /// during slow Wayback fetches caused false positives.)
-    private let maxHits = 3
+    /// we declare it a loop. Must be high enough to tolerate normal
+    /// browser behavior (page reloads on resize, rapid navigation)
+    /// while still catching real HTTP↔HTTPS redirect bounces.
+    private let maxHits = 6
 
     public init() {}
 

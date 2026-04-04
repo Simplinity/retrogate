@@ -1,5 +1,4 @@
 import SwiftUI
-import Logging
 import ProxyServer
 import HTMLTranscoder
 import ImageTranscoder
@@ -32,6 +31,50 @@ struct RetroGateApp: App {
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 680, height: 520)
+        .commands {
+            // Replace "About RetroGate" with a proper About panel
+            CommandGroup(replacing: .appInfo) {
+                Button("About RetroGate") {
+                    NSApplication.shared.orderFrontStandardAboutPanel(options: [
+                        .applicationName: "RetroGate",
+                        .applicationVersion: "1.0.0",
+                        .version: "1",
+                        .credits: NSAttributedString(
+                            string: "A proxy server for vintage computers.\nBrowse the modern web on classic Macs and PCs.",
+                            attributes: [
+                                .font: NSFont.systemFont(ofSize: 11),
+                                .foregroundColor: NSColor.secondaryLabelColor
+                            ]
+                        )
+                    ])
+                }
+            }
+
+            // Remove File > New Window (single-window app)
+            CommandGroup(replacing: .newItem) {}
+
+            // Proxy controls
+            CommandMenu("Proxy") {
+                Button(proxyState.isRunning ? "Stop Proxy" : "Start Proxy") {
+                    proxyState.toggleProxy()
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+
+                Button(proxyState.waybackEnabled ? "Disable Wayback Mode" : "Enable Wayback Mode") {
+                    proxyState.waybackEnabled.toggle()
+                    proxyState.syncConfig()
+                    proxyState.saveSettings()
+                }
+                .keyboardShortcut("w", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Clear Request Log") {
+                    proxyState.requestLog.removeAll()
+                }
+                .keyboardShortcut("k", modifiers: .command)
+            }
+        }
 
         Settings {
             SettingsView()
@@ -94,17 +137,17 @@ struct VintagePreset: Identifiable {
     static let all: [VintagePreset] = [
         // ── Mac ──────────────────────────────────────
         // System 6 (1988): Predates the web, but MacWWW (1993) runs on it.
-        // Mac Plus/SE had 1-bit B&W screens; Mac II had color up to Millions.
+        // Mac Plus/SE had 1-bit B&W screens; Mac II had color.
         VintagePreset(id: "system6", platform: .mac, osName: "System 6", year: "1988",
                       htmlLevel: .aggressive, imageQuality: 0.3,
                       defaultResolution: .init(width: 512, height: 342),
                       resolutions: [.init(width: 512, height: 342),
                                     .init(width: 640, height: 480)],
                       eraRange: 1993...1995,
-                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands, .millions],
+                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands],
                       defaultColorDepth: .monochrome),
         // System 7 (1991): NCSA Mosaic, early Netscape.
-        // Classic was B&W, but most System 7 Macs had color up to Millions.
+        // Classic was B&W, but most System 7 Macs had color.
         VintagePreset(id: "system7", platform: .mac, osName: "System 7", year: "1991",
                       htmlLevel: .aggressive, imageQuality: 0.4,
                       defaultResolution: .init(width: 640, height: 480),
@@ -112,7 +155,7 @@ struct VintagePreset: Identifiable {
                                     .init(width: 640, height: 480),
                                     .init(width: 832, height: 624)],
                       eraRange: 1994...1997,
-                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands, .millions],
+                      supportedColorDepths: [.monochrome, .sixteenColor, .twoFiftySix, .thousands],
                       defaultColorDepth: .twoFiftySix),
         // Mac OS 8 (1997): Netscape 3–4, IE 4 Mac, Cyberdog.
         VintagePreset(id: "macos8", platform: .mac, osName: "Mac OS 8", year: "1997",
@@ -122,8 +165,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 832, height: 624),
                                     .init(width: 1024, height: 768)],
                       eraRange: 1997...1999,
-                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Mac OS 9 (1999): IE 5 Mac, Netscape 4.7, iCab.
         VintagePreset(id: "macos9", platform: .mac, osName: "Mac OS 9", year: "1999",
                       htmlLevel: .moderate, imageQuality: 0.6,
@@ -133,8 +176,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1024, height: 768),
                                     .init(width: 1152, height: 870)],
                       eraRange: 1999...2002,
-                      supportedColorDepths: [.twoFiftySix, .thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Mac OS X (2001): Safari, Camino, Firefox, IE 5.2 Mac.
         VintagePreset(id: "macosx", platform: .mac, osName: "Mac OS X", year: "2001",
                       htmlLevel: .minimal, imageQuality: 0.8,
@@ -144,8 +187,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1152, height: 870),
                                     .init(width: 1280, height: 1024)],
                       eraRange: 2001...2005,
-                      supportedColorDepths: [.thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.thousands],
+                      defaultColorDepth: .thousands),
         // ── PC ───────────────────────────────────────
         // Windows 3.1 (1992): Predates the web, but Mosaic ran on it via Win32s.
         // Standard VGA was 16 colors.
@@ -165,7 +208,7 @@ struct VintagePreset: Identifiable {
                                     .init(width: 800, height: 600),
                                     .init(width: 1024, height: 768)],
                       eraRange: 1995...1998,
-                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands, .millions],
+                      supportedColorDepths: [.sixteenColor, .twoFiftySix, .thousands],
                       defaultColorDepth: .twoFiftySix),
         // Windows 98 (1998): IE 5–6, Netscape 4.7.
         VintagePreset(id: "win98", platform: .pc, osName: "Windows 98", year: "1998",
@@ -175,8 +218,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 800, height: 600),
                                     .init(width: 1024, height: 768)],
                       eraRange: 1998...2001,
-                      supportedColorDepths: [.twoFiftySix, .thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Windows 2000 (2000): IE 5–6, early Firefox/Mozilla.
         VintagePreset(id: "win2000", platform: .pc, osName: "Windows 2000", year: "2000",
                       htmlLevel: .minimal, imageQuality: 0.7,
@@ -185,8 +228,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1024, height: 768),
                                     .init(width: 1280, height: 1024)],
                       eraRange: 2000...2003,
-                      supportedColorDepths: [.twoFiftySix, .thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.twoFiftySix, .thousands],
+                      defaultColorDepth: .thousands),
         // Windows XP (2001): IE 6, Firefox 1–3, Opera.
         VintagePreset(id: "winxp", platform: .pc, osName: "Windows XP", year: "2001",
                       htmlLevel: .minimal, imageQuality: 0.8,
@@ -196,8 +239,8 @@ struct VintagePreset: Identifiable {
                                     .init(width: 1280, height: 1024),
                                     .init(width: 1600, height: 1200)],
                       eraRange: 2001...2006,
-                      supportedColorDepths: [.thousands, .millions],
-                      defaultColorDepth: .millions),
+                      supportedColorDepths: [.thousands],
+                      defaultColorDepth: .thousands),
     ]
 
     static func forPlatform(_ platform: VintagePlatform) -> [VintagePreset] {
@@ -221,7 +264,7 @@ private struct SavedSettings: Codable {
     var screenHeight: Int = 768
     var transcodingBypassDomains: String = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
     var minifyHTML: Bool = false
-    var colorDepth: String = "millions"
+    var colorDepth: String = "thousands"
 
     static var fileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -262,11 +305,7 @@ extension SavedSettings {
         if let v = try c.decodeIfPresent(Int.self, forKey: .screenHeight) { screenHeight = v }
         if let v = try c.decodeIfPresent(String.self, forKey: .transcodingBypassDomains) { transcodingBypassDomains = v }
         if let v = try c.decodeIfPresent(Bool.self, forKey: .minifyHTML) { minifyHTML = v }
-        if let v = try c.decodeIfPresent(String.self, forKey: .colorDepth) {
-            // Migration: old "thousands" meant full color (now called "millions").
-            // The new "thousands" case uses raw value "16bit".
-            colorDepth = (v == "thousands") ? "millions" : v
-        }
+        if let v = try c.decodeIfPresent(String.self, forKey: .colorDepth) { colorDepth = v }
     }
 }
 
@@ -287,7 +326,7 @@ class ProxyState: ObservableObject {
     @Published var resolution: ScreenResolution = ScreenResolution(width: 1024, height: 768)
     @Published var transcodingBypassDomainsText: String = "68kmla.org\nsystem7today.com\nmacintoshgarden.org"
     @Published var minifyHTML: Bool = false
-    @Published var colorDepth: ColorDepth = .millions
+    @Published var colorDepth: ColorDepth = .thousands
     @Published var requestLog: [RequestLogEntry] = []
 
     var transcodingBypassDomains: Set<String> {
@@ -616,7 +655,7 @@ struct ContentView: View {
                             }
                             InfoPopover(
                                 title: "Display Color Depth",
-                                text: "Matches image output to your vintage display's color capabilities.\n\nB&W (1-bit): Floyd-Steinberg dithering for monochrome screens (Mac Plus, SE, Classic). Classic halftone newspaper look.\n\n16 Colors: Ordered dithering with the standard VGA palette. For Windows 3.1 and early VGA displays.\n\n256 Colors: GIF palette quantization for 8-bit displays common in the mid-90s.\n\nThousands: 16-bit color (32,768 colors). Matches the Mac OS Monitors control panel 'Thousands of Colors' setting. Subtle banding in gradients.\n\nMillions: Full 24-bit color (16.7 million colors). No reduction applied."
+                                text: "Matches image output to your vintage display's color capabilities.\n\nB&W (1-bit): Floyd-Steinberg dithering for monochrome screens (Mac Plus, SE, Classic). Classic halftone newspaper look.\n\n16 Colors: Ordered dithering with the standard VGA palette. For Windows 3.1 and early VGA displays.\n\n256 Colors: GIF palette quantization for 8-bit displays common in the mid-90s.\n\nThousands+: Full-color JPEG output for 16-bit or 24-bit displays."
                             )
                         }
                     }
@@ -895,10 +934,43 @@ struct SettingsView: View {
     @EnvironmentObject var state: ProxyState
 
     var body: some View {
-        Form {
-            TextField("Port", value: $state.port, format: .number)
+        TabView {
+            generalTab
+                .tabItem { Label("General", systemImage: "gearshape") }
+            networkTab
+                .tabItem { Label("Network", systemImage: "network") }
         }
-        .padding()
-        .frame(width: 400)
+        .frame(width: 450, height: 280)
+    }
+
+    private var generalTab: some View {
+        Form {
+            TextField("Proxy Port:", value: $state.port, format: .number)
+                .help("The HTTP port vintage browsers connect to (default: 8080)")
+            Toggle("Minify HTML", isOn: $state.minifyHTML)
+                .help("Strip comments and collapse whitespace to save bandwidth on slow connections")
+        }
+        .formStyle(.grouped)
+        .onChange(of: state.port) { state.syncConfig(); state.saveSettings() }
+        .onChange(of: state.minifyHTML) { state.syncConfig(); state.saveSettings() }
+    }
+
+    private var networkTab: some View {
+        Form {
+            Section {
+                Text("Domains listed here skip HTML transcoding (one per line). Use this for sites that already serve retro-compatible HTML.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: $state.transcodingBypassDomainsText)
+                    .font(.system(.body, design: .monospaced))
+                    .frame(height: 120)
+                    .scrollContentBackground(.hidden)
+                    .border(Color(nsColor: .separatorColor))
+            } header: {
+                Text("Transcoding Bypass Domains")
+            }
+        }
+        .formStyle(.grouped)
+        .onChange(of: state.transcodingBypassDomainsText) { state.syncConfig(); state.saveSettings() }
     }
 }

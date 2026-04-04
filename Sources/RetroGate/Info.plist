@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>RetroGate</string>
+    <key>CFBundleDisplayName</key>
+    <string>RetroGate</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.brunowernimont.retrogate</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright 2024-2026. All rights reserved.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>RetroGate needs local network access to serve as an HTTP proxy for vintage computers on your network.</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- RetroGate is an HTTP proxy that fetches arbitrary websites on behalf of
+             vintage browsers. It must connect to any domain over HTTP or HTTPS.
+             This is the core functionality of the app, not a workaround. -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+</dict>
+</plist>

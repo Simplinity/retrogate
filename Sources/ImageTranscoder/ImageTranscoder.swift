@@ -9,13 +9,6 @@ import AppKit
 
 /// Display color depth for vintage machines.
 /// Controls image dithering and palette reduction to match the target hardware.
-///
-/// Maps to real hardware color modes:
-/// - Monochrome: Mac Plus/SE/Classic (1-bit, 2 colors)
-/// - 16 Colors: VGA standard, Windows 3.1 default (4-bit)
-/// - 256 Colors: Super VGA, mid-90s standard (8-bit)
-/// - Thousands: Mac OS "Thousands of Colors" (16-bit, 32,768 colors, 5 bits/channel)
-/// - Millions: Mac OS "Millions of Colors" (24-bit, 16.7M colors, 8 bits/channel)
 public enum ColorDepth: String, Sendable, Codable, CaseIterable, Hashable {
     /// 1-bit black & white — Floyd-Steinberg error-diffusion dithering.
     case monochrome = "monochrome"
@@ -23,19 +16,15 @@ public enum ColorDepth: String, Sendable, Codable, CaseIterable, Hashable {
     case sixteenColor = "16color"
     /// 256 colors — standard GIF palette quantization.
     case twoFiftySix = "256color"
-    /// Thousands of Colors (16-bit) — 5 bits per channel, 32,768 colors.
-    /// Subtle banding visible in gradients. Classic Mac OS Monitors setting.
-    case thousands = "16bit"
-    /// Millions of Colors (24-bit) — full color, no reduction.
-    case millions = "millions"
+    /// Thousands+ (16-bit/24-bit) — full color, no reduction.
+    case thousands = "thousands"
 
     public var displayName: String {
         switch self {
         case .monochrome: return "B&W (1-bit)"
         case .sixteenColor: return "16 Colors"
         case .twoFiftySix: return "256 Colors"
-        case .thousands: return "Thousands"
-        case .millions: return "Millions"
+        case .thousands: return "Thousands+"
         }
     }
 }
@@ -61,7 +50,7 @@ public struct ImageTranscoder {
     private let colorDepth: ColorDepth
     private let logger: Logger
 
-    public init(maxWidth: Int = 640, maxHeight: Int = 480, outputFormat: OutputFormat = .jpeg(quality: 0.6), colorDepth: ColorDepth = .millions) {
+    public init(maxWidth: Int = 640, maxHeight: Int = 480, outputFormat: OutputFormat = .jpeg(quality: 0.6), colorDepth: ColorDepth = .thousands) {
         self.maxWidth = maxWidth
         self.maxHeight = maxHeight
         self.outputFormat = outputFormat
@@ -115,7 +104,7 @@ public struct ImageTranscoder {
         }
 
         // For reduced color depths, fill white background (transparent areas become white)
-        if colorDepth != .millions {
+        if colorDepth != .thousands {
             ctx.setFillColor(gray: 1, alpha: 1)
             ctx.fill(CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
         }
@@ -123,16 +112,14 @@ public struct ImageTranscoder {
         ctx.interpolationQuality = .high
         ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: scaledWidth, height: scaledHeight))
 
-        // Apply color reduction for non-Millions depths
-        if colorDepth != .millions, let pixelData = ctx.data {
+        // Apply dithering for reduced color depths
+        if colorDepth != .thousands, let pixelData = ctx.data {
             switch colorDepth {
             case .monochrome:
                 Self.floydSteinbergDither(pixels: pixelData, width: scaledWidth, height: scaledHeight, bytesPerRow: ctx.bytesPerRow)
             case .sixteenColor:
                 Self.orderedDither16(pixels: pixelData, width: scaledWidth, height: scaledHeight, bytesPerRow: ctx.bytesPerRow)
-            case .thousands:
-                Self.quantize16bit(pixels: pixelData, width: scaledWidth, height: scaledHeight, bytesPerRow: ctx.bytesPerRow)
-            case .twoFiftySix, .millions:
+            case .twoFiftySix, .thousands:
                 break
             }
         }
@@ -142,16 +129,8 @@ public struct ImageTranscoder {
             return nil
         }
 
-        // For palette-based depths, force GIF (preserves dithered pixels exactly).
-        // Thousands (16-bit) keeps the browser-preferred format — it's still continuous-tone.
-        let effectiveFormat: OutputFormat = {
-            switch colorDepth {
-            case .monochrome, .sixteenColor, .twoFiftySix:
-                return .gif
-            case .thousands, .millions:
-                return outputFormat
-            }
-        }()
+        // For reduced color depths, force GIF (palette-based format preserves dithered pixels)
+        let effectiveFormat = (colorDepth != .thousands) ? OutputFormat.gif : outputFormat
 
         // Encode to target format using ImageIO (thread-safe)
         let outputData = NSMutableData()
@@ -175,7 +154,7 @@ public struct ImageTranscoder {
             return nil
         }
 
-        let depthLabel = colorDepth != .millions ? " [\(colorDepth.displayName)]" : ""
+        let depthLabel = colorDepth != .thousands ? " [\(colorDepth.displayName)]" : ""
         logger.info("Transcoded \(originalWidth)x\(originalHeight) → \(scaledWidth)x\(scaledHeight) \(mimeType)\(depthLabel) (\(outputData.length) bytes)")
         return (outputData as Data, mimeType)
     }
@@ -198,13 +177,13 @@ public struct ImageTranscoder {
     /// When `forceFormat` is true, also transcode JPEG↔GIF conversions
     /// (e.g., browser only accepts GIF but image is JPEG).
     public func needsTranscoding(_ data: Data, forceFormat: Bool = false) -> Bool {
-        // Color reduction modes always require full transcoding
+        // Dithering modes always require full transcoding
         switch colorDepth {
-        case .monochrome, .sixteenColor, .thousands:
+        case .monochrome, .sixteenColor:
             return true
         case .twoFiftySix:
             return Self.detectFormat(data) != .gif
-        case .millions:
+        case .thousands:
             break
         }
 
@@ -360,26 +339,5 @@ public struct ImageTranscoder {
             if d < bestDist { bestDist = d; best = c }
         }
         return best
-    }
-
-    // MARK: - 16-bit Quantization (Thousands of Colors)
-
-    /// Reduce each channel from 8-bit (256 levels) to 5-bit (32 levels),
-    /// simulating classic Mac OS "Thousands of Colors" (16-bit, 32,768 colors).
-    ///
-    /// The formula `(val >> 3) * 255 / 31` truncates to 5 bits then scales back
-    /// to 8-bit range — exactly what real 16-bit display hardware does.
-    /// This produces subtle banding in gradients, matching the authentic look.
-    private static func quantize16bit(pixels: UnsafeMutableRawPointer, width: Int, height: Int, bytesPerRow: Int) {
-        let buf = pixels.assumingMemoryBound(to: UInt8.self)
-        for y in 0..<height {
-            for x in 0..<width {
-                let off = y * bytesPerRow + x * 4
-                buf[off]     = UInt8((Int(buf[off])     >> 3) * 255 / 31)  // R
-                buf[off + 1] = UInt8((Int(buf[off + 1]) >> 3) * 255 / 31)  // G
-                buf[off + 2] = UInt8((Int(buf[off + 2]) >> 3) * 255 / 31)  // B
-                // Alpha unchanged
-            }
-        }
     }
 }
