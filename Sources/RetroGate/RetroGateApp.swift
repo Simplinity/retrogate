@@ -972,8 +972,6 @@ struct ContentView: View {
                     }
                 }
 
-                Divider().overlay(Color.gold.opacity(0.12))
-
                 HStack {
                     Text("Errors")
                         .font(.system(size: 13))
@@ -1439,14 +1437,9 @@ struct DashboardCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.gold)
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
-            }
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.primary)
             content
             Spacer(minLength: 0)
         }
