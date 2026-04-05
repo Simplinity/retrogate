@@ -924,7 +924,7 @@ struct ContentView: View {
                         .frame(height: 10)
 
                         Text("\(savings)% smaller after transcoding")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -958,7 +958,7 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(state.waybackToleranceMonths == 0 ? "Any date" : "\(state.waybackToleranceMonths) months")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                     HStack {
@@ -967,7 +967,7 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(state.selectedPreset.eraDescription)
-                            .font(.system(size: 13, design: .rounded))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -1012,7 +1012,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
-                .font(bold ? .system(size: 13, weight: .semibold, design: .rounded) : .system(size: 13, design: .rounded))
+                .font(.system(size: 13, weight: bold ? .semibold : .medium, design: .rounded))
                 .foregroundStyle(Color.gold)
         }
     }
