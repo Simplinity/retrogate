@@ -40,7 +40,7 @@ struct RetroGateApp: App {
         }
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
-        .defaultSize(width: 1060, height: 720)
+        .defaultSize(width: 1120, height: 760)
         .commands { RetroGateCommands() }
 
         Settings {
@@ -584,7 +584,7 @@ struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         } detail: {
             switch selectedTab {
             case .dashboard:
@@ -809,7 +809,7 @@ struct ContentView: View {
                             }
                             .frame(width: 60, height: 12)
                             Text("\(item.count)")
-                                .font(.system(.caption, design: .rounded).bold())
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color.gold)
                                 .frame(width: 30, alignment: .trailing)
                         }
@@ -856,10 +856,10 @@ struct ContentView: View {
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(cat.count)")
-                                .font(.system(.caption, design: .rounded).bold())
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color.gold)
                             Text("(\(Int(Double(cat.count) / Double(total) * 100))%)")
-                                .font(.caption2)
+                                .font(.system(size: 12))
                                 .foregroundStyle(.tertiary)
                         }
                     }
@@ -924,7 +924,7 @@ struct ContentView: View {
                         .frame(height: 10)
 
                         Text("\(savings)% smaller after transcoding")
-                            .font(.caption2)
+                            .font(.system(size: 12))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -963,11 +963,11 @@ struct ContentView: View {
                     }
                     HStack {
                         Text("Era")
-                            .font(.callout)
+                            .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(state.selectedPreset.eraDescription)
-                            .font(.system(.callout, design: .rounded))
+                            .font(.system(size: 13, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -1395,36 +1395,37 @@ struct DashboardStatCard: View {
     let detail: String
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(Color.gold)
 
             Text(value)
-                .font(.system(.title2, design: .rounded, weight: .semibold))
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.6)
 
-            VStack(spacing: 1) {
+            VStack(spacing: 3) {
                 Text(title)
-                    .font(.footnote.weight(.semibold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Color.gold)
                     .textCase(.uppercase)
+                    .tracking(0.8)
                 Text(detail)
-                    .font(.caption)
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 10)
-        .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.vertical, 18)
+        .padding(.horizontal, 12)
+        .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.gold.opacity(0.1), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.gold.opacity(0.12), lineWidth: 0.5)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value), \(detail)")
@@ -1437,24 +1438,24 @@ struct DashboardCard<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.gold)
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
             }
             content
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(16)
+        .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.gold.opacity(0.1), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.gold.opacity(0.12), lineWidth: 0.5)
         )
     }
 }
@@ -1465,7 +1466,7 @@ struct DashboardEmptyState: View {
         VStack {
             Spacer(minLength: 0)
             Text(text)
-                .font(.callout)
+                .font(.system(size: 14))
                 .foregroundStyle(.tertiary)
             Spacer(minLength: 0)
         }
