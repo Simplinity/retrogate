@@ -674,7 +674,7 @@ struct ContentView: View {
                     DashboardStatCard(
                         icon: "clock",
                         title: "Uptime",
-                        value: state.isRunning ? state.uptimeString : "—",
+                        value: state.isRunning ? state.uptimeString : "0m",
                         detail: state.isRunning ? "Running" : "Stopped"
                     )
                 }
@@ -1029,7 +1029,7 @@ struct ContentView: View {
     private var dashboardSavingsPercent: String {
         let original = state.requestLog.reduce(0) { $0 + $1.originalSize }
         let transcoded = state.requestLog.reduce(0) { $0 + $1.transcodedSize }
-        guard original > 0 else { return "—" }
+        guard original > 0 else { return "0%" }
         let pct = Int((1.0 - Double(transcoded) / Double(original)) * 100)
         return "\(pct)%"
     }
