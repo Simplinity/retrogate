@@ -40,7 +40,8 @@ public struct HTMLTranscoder {
 
         switch level {
         case .minimal:
-            break
+            // Inject vendor prefixes into <style> blocks for medium-vintage browsers
+            try injectVendorPrefixes(doc)
         case .moderate:
             try simplifyCSS(doc)
             try downgradeSemanticTags(doc)
@@ -94,9 +95,8 @@ public struct HTMLTranscoder {
         // Since we strip all <script>, the noscript content is what we need.
         for noscript in try doc.select("noscript") {
             if let parent = noscript.parent() {
-                // SwiftSoup: unwrap replaces the tag with its children
                 try noscript.unwrap()
-                _ = parent // keep reference alive
+                _ = parent
             }
         }
 
@@ -107,7 +107,6 @@ public struct HTMLTranscoder {
         for tag in tagsToRemove {
             try doc.select(tag).remove()
         }
-        // Remove all event handler attributes
         for element in try doc.select("[onclick], [onload], [onerror], [onmouseover]") {
             try element.removeAttr("onclick")
             try element.removeAttr("onload")
@@ -116,7 +115,6 @@ public struct HTMLTranscoder {
         }
 
         // Strip CSP meta tags, SRI integrity attributes, and CORS attributes
-        // — these block resource loading when proxied through HTTP
         try doc.select("meta[http-equiv=Content-Security-Policy]").remove()
         for el in try doc.select("[integrity]") { try el.removeAttr("integrity") }
         for el in try doc.select("[crossorigin]") { try el.removeAttr("crossorigin") }
@@ -141,18 +139,13 @@ public struct HTMLTranscoder {
                 try element.tagName("div")
             }
         }
-        // HTML4 inline tags → HTML 3.2 equivalents
         for el in try doc.select("strong") { try el.tagName("b") }
         for el in try doc.select("em") { try el.tagName("i") }
         logger.debug("Downgraded semantic HTML5 tags to divs")
     }
     
     /// Convert common layout patterns to table-based layouts.
-    /// Conservative approach: only converts clear nav patterns and wraps
-    /// top-level div sequences into single-column tables for structure.
     private func convertToTableLayout(_ doc: Document) throws {
-        // Convert nav-like unordered lists to horizontal table rows.
-        // Detects <ul> where every <li> contains a link.
         for ul in try doc.select("ul") {
             let items = ul.children().filter { $0.tagName() == "li" }
             guard items.count > 1, items.count <= 12 else { continue }
@@ -167,7 +160,6 @@ public struct HTMLTranscoder {
             try ul.attr("border", "0")
         }
 
-        // Wrap body's direct div children in a single-column table for structure.
         if let body = doc.body() {
             let divChildren = body.children().filter { $0.tagName() == "div" }
             guard divChildren.count >= 3 else { return }
@@ -195,38 +187,40 @@ public struct HTMLTranscoder {
             if let align = props["text-align"] {
                 try element.attr("align", align)
             }
-
             if let bg = props["background-color"] {
                 try element.attr("bgcolor", Self.normalizeColor(bg))
             }
-
             if let color = props["color"] {
                 let inner = try element.html()
                 try element.html("<font color=\"\(Self.normalizeColor(color))\">\(inner)</font>")
             }
-
             if let width = props["width"] {
                 try element.attr("width", width.replacingOccurrences(of: "px", with: ""))
             }
-
             if let height = props["height"] {
                 try element.attr("height", height.replacingOccurrences(of: "px", with: ""))
             }
-
             if let fontSize = props["font-size"] {
                 let size = Self.mapFontSize(fontSize)
                 let inner = try element.html()
                 try element.html("<font size=\"\(size)\">\(inner)</font>")
             }
-
             if let weight = props["font-weight"], weight == "bold" || weight == "700" {
                 let inner = try element.html()
                 try element.html("<b>\(inner)</b>")
             }
-
             try element.removeAttr("style")
         }
         logger.debug("Converted inline styles to HTML 3.2 attributes")
+    }
+
+    /// Inject vendor prefixes into <style> blocks (minimal mode only).
+    private func injectVendorPrefixes(_ doc: Document) throws {
+        for style in try doc.select("style") {
+            let css = try style.html()
+            let prefixed = Self.prefixCSS(css)
+            try style.html(prefixed)
+        }
     }
 
     // MARK: - Style Parsing Helpers
@@ -247,18 +241,13 @@ public struct HTMLTranscoder {
     /// Normalize a CSS color value to a hex string for HTML attributes.
     static func normalizeColor(_ css: String) -> String {
         let trimmed = css.trimmingCharacters(in: .whitespaces).lowercased()
-
-        // Already hex
         if trimmed.hasPrefix("#") {
             if trimmed.count == 4 {
-                // #RGB → #RRGGBB
                 let chars = Array(trimmed.dropFirst())
                 return "#\(chars[0])\(chars[0])\(chars[1])\(chars[1])\(chars[2])\(chars[2])"
             }
             return trimmed
         }
-
-        // rgb(r, g, b)
         if trimmed.hasPrefix("rgb("), trimmed.hasSuffix(")") {
             let inner = trimmed.dropFirst(4).dropLast()
             let components = inner.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
@@ -266,8 +255,6 @@ public struct HTMLTranscoder {
                 return String(format: "#%02x%02x%02x", components[0], components[1], components[2])
             }
         }
-
-        // Named colors
         let named: [String: String] = [
             "black": "#000000", "white": "#ffffff", "red": "#ff0000",
             "green": "#008000", "blue": "#0000ff", "yellow": "#ffff00",
@@ -282,27 +269,19 @@ public struct HTMLTranscoder {
     /// Map a CSS font-size value to an HTML 3.2 font size (1–7).
     static func mapFontSize(_ css: String) -> String {
         let trimmed = css.trimmingCharacters(in: .whitespaces).lowercased()
-
-        // Keywords
         let keywords: [String: String] = [
             "xx-small": "1", "x-small": "1", "small": "2", "medium": "3",
             "large": "4", "x-large": "5", "xx-large": "6",
         ]
         if let mapped = keywords[trimmed] { return mapped }
-
-        // Extract numeric value (strip px, em, rem, pt)
         let numericString = trimmed
             .replacingOccurrences(of: "px", with: "")
             .replacingOccurrences(of: "pt", with: "")
             .replacingOccurrences(of: "em", with: "")
             .replacingOccurrences(of: "rem", with: "")
             .trimmingCharacters(in: .whitespaces)
-
         guard let value = Double(numericString) else { return "3" }
-
-        // For px/pt-like values, map to font sizes
         if trimmed.contains("em") || trimmed.contains("rem") {
-            // em/rem: 1.0 = medium (3)
             if value < 0.7 { return "1" }
             if value < 0.85 { return "2" }
             if value < 1.1 { return "3" }
@@ -311,8 +290,6 @@ public struct HTMLTranscoder {
             if value < 2.0 { return "6" }
             return "7"
         }
-
-        // px/pt values
         if value < 10 { return "1" }
         if value < 13 { return "2" }
         if value < 16 { return "3" }
@@ -326,10 +303,8 @@ public struct HTMLTranscoder {
     private func rewriteImageSources(_ doc: Document, baseURL: URL) throws {
         for img in try doc.select("img") {
             if let src = try? img.attr("src"), !src.isEmpty {
-                // Resolve relative URLs
                 let resolved = URL(string: src, relativeTo: baseURL)?.absoluteString ?? src
                 try img.attr("src", resolved)
-                // Only constrain images that are wider than maxImageWidth
                 if let w = try? Int(img.attr("width")), w > maxImageWidth {
                     let ratio = Double(maxImageWidth) / Double(w)
                     if let h = try? Int(img.attr("height")) {
@@ -346,11 +321,8 @@ public struct HTMLTranscoder {
     
     /// Set charset meta for iso-8859-1 (most vintage Mac browsers prefer this)
     private func setCharsetMeta(_ doc: Document) throws {
-        // Remove existing charset/content-type metas
         try doc.select("meta[charset]").remove()
         try doc.select("meta[http-equiv=Content-Type]").remove()
-        
-        // Add HTML 3.2 compatible charset meta
         if let head = doc.head() {
             try head.prepend("""
                 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -360,33 +332,69 @@ public struct HTMLTranscoder {
 
     // MARK: - CSS Vendor Prefix Injection
 
+    /// Properties that need vendor prefixes, with their prefix mappings.
+    /// Ordered longest-first so `transform-origin` is processed before `transform`.
+    private static let prefixRules: [(property: String, prefixes: [String])] = [
+        ("border-radius",    ["-webkit-border-radius", "-moz-border-radius"]),
+        ("box-shadow",       ["-webkit-box-shadow", "-moz-box-shadow"]),
+        ("transform-origin", ["-webkit-transform-origin", "-moz-transform-origin", "-ms-transform-origin"]),
+        ("transition",       ["-webkit-transition", "-moz-transition", "-o-transition"]),
+        ("transform",        ["-webkit-transform", "-moz-transform", "-ms-transform"]),
+        ("animation",        ["-webkit-animation", "-moz-animation"]),
+        ("user-select",      ["-webkit-user-select", "-moz-user-select", "-ms-user-select"]),
+        ("opacity",          ["-moz-opacity"]),
+    ]
+
     /// Add vendor prefixes (-webkit-, -moz-, -ms-) for older browsers.
-    /// Applied in minimal transcoding mode where CSS is preserved.
+    /// Works at the CSS declaration level: finds unprefixed property declarations
+    /// and inserts vendor-prefixed copies before them.
+    ///
+    /// Rules:
+    /// - Only prefixes UNPREFIXED properties (skips `-webkit-transform` etc.)
+    /// - Handles `transform` vs `transform-origin` independently
+    /// - Preserves the original unprefixed declaration
     public static func prefixCSS(_ css: String) -> String {
         var result = css
-        let prefixable = [
-            ("border-radius", ["-webkit-border-radius", "-moz-border-radius"]),
-            ("box-shadow", ["-webkit-box-shadow", "-moz-box-shadow"]),
-            ("transition", ["-webkit-transition", "-moz-transition", "-o-transition"]),
-            ("transform", ["-webkit-transform", "-moz-transform", "-ms-transform"]),
-            ("animation", ["-webkit-animation", "-moz-animation"]),
-            ("flex", ["-webkit-flex"]),
-            ("display: flex", ["display: -webkit-flex", "display: -webkit-box"]),
-            ("display: grid", ["display: -ms-grid"]),
-            ("opacity", ["-moz-opacity"]),
-            ("user-select", ["-webkit-user-select", "-moz-user-select", "-ms-user-select"]),
-        ]
-        for (prop, prefixes) in prefixable {
-            if result.contains(prop) {
-                for prefix in prefixes.reversed() {
-                    result = result.replacingOccurrences(
-                        of: prop,
-                        with: prefix + "; " + prop
-                    )
+
+        for rule in prefixRules {
+            // Build regex: match the property name NOT preceded by - or word char.
+            // For "transform", also add negative lookahead to avoid "transform-origin".
+            let escaped = NSRegularExpression.escapedPattern(for: rule.property)
+            let pattern: String
+            if rule.property == "transform" {
+                // Match "transform" but NOT "transform-origin", "transform-style" etc.
+                pattern = "(?<![-\\w])\(escaped)(?![-\\w])\\s*:"
+            } else {
+                pattern = "(?<![-\\w])\(escaped)\\s*:"
+            }
+
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+
+            // Process matches in reverse order to preserve string indices
+            let matches = regex.matches(in: result, range: NSRange(result.startIndex..., in: result))
+            for match in matches.reversed() {
+                guard let matchRange = Range(match.range, in: result) else { continue }
+                // Find the semicolon that ends this declaration
+                let afterMatch = result[matchRange.lowerBound...]
+                guard let semiIndex = afterMatch.firstIndex(of: ";") else { continue }
+                // Extract the value (everything between ":" and ";")
+                let value = String(result[matchRange.upperBound...semiIndex])
+                    .trimmingCharacters(in: .whitespaces)
+                    .trimmingCharacters(in: CharacterSet(charactersIn: ";"))
+                    .trimmingCharacters(in: .whitespaces)
+
+                // Build prefixed declarations to insert before the original
+                var prefixed = ""
+                for prefix in rule.prefixes {
+                    prefixed += " \(prefix): \(value);"
                 }
+
+                // Insert prefixed declarations before the original declaration
+                result.replaceSubrange(matchRange.lowerBound..<matchRange.lowerBound, with: prefixed)
             }
         }
+
         return result
     }
-
 }
+
