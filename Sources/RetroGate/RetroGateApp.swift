@@ -1360,9 +1360,8 @@ struct WaybackInfoRow: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            (Text(label + ": ").bold() + Text(value))
+            (Text(label + ": ").bold().foregroundColor(.primary) + Text(value).foregroundColor(Color.gold))
                 .font(.system(size: 13))
-                .foregroundStyle(Color.gold)
             Spacer()
         }
     }
