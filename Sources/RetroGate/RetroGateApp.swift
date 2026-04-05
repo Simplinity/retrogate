@@ -943,45 +943,13 @@ struct ContentView: View {
                         f.dateFormat = "MMMM d, yyyy"
                         return f
                     }()
-                    HStack {
-                        Text("Target")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(dateFormatter.string(from: state.waybackDate))
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.gold)
-                    }
-                    HStack {
-                        Text("Tolerance")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(state.waybackToleranceMonths == 0 ? "Any date" : "\(state.waybackToleranceMonths) months")
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.gold)
-                    }
-                    HStack {
-                        Text("Era")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(state.selectedPreset.eraDescription)
-                            .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.gold)
-                    }
+                    WaybackInfoRow(label: "Target", value: dateFormatter.string(from: state.waybackDate))
+                    WaybackInfoRow(label: "Tolerance", value: state.waybackToleranceMonths == 0 ? "Any date" : "\(state.waybackToleranceMonths) months")
+                    WaybackInfoRow(label: "Era", value: state.selectedPreset.eraDescription)
                 }
 
-                HStack {
-                    Text("Errors")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    let errorRate = state.requestLog.isEmpty ? 0 : Int(Double(state.errorCount) / Double(state.requestLog.count) * 100)
-                    Text(state.errorCount == 0 ? "None" : "\(state.errorCount) (\(errorRate)%)")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(state.errorCount == 0 ? Color.gold : Color.gold.opacity(0.7))
-                }
+                let errorRate = state.requestLog.isEmpty ? 0 : Int(Double(state.errorCount) / Double(state.requestLog.count) * 100)
+                WaybackInfoRow(label: "Errors", value: state.errorCount == 0 ? "None" : "\(state.errorCount) (\(errorRate)%)")
 
                 if !state.recentErrors.isEmpty {
                     VStack(spacing: 6) {
@@ -1385,6 +1353,20 @@ struct ContentView: View {
 }
 
 // MARK: - Dashboard Components
+
+struct WaybackInfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            (Text(label + ": ").bold() + Text(value))
+                .font(.system(size: 13))
+                .foregroundStyle(Color.gold)
+            Spacer()
+        }
+    }
+}
 
 struct DashboardStatCard: View {
     let icon: String
