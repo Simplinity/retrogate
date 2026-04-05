@@ -6,25 +6,19 @@
 
 ## A Manifesto
 
-You kept it.
+Somewhere in a landfill, a PowerBook 520 is crying.
 
-🖥️ The Bondi Blue iMac G3 on your desk. 💻 The PowerBook G3 "Pismo" you refuse to part with. 🖥️ The Power Mac G4 that still feels fast when you hear the startup chime. The beige Gateway tower running Windows 98 that you drove four hours to rescue from a recycling center because *they were just going to crush it*. You kept them all.
+Not because it's broken — it still boots, still runs, still has that satisfying *bong* — but because the entire internet has left it behind. Every website now requires JavaScript frameworks that weigh more than the PowerBook's entire hard drive. Every image is in a format invented two decades after its last system update. Every page assumes you have more RAM than this machine has atoms.
 
-You're not alone. There are thousands of us — tens of thousands — and we are absolutely not okay. We hunt for working AirPort cards on eBay. We hoard Ethernet adapters and argue about which Netscape version had the best throbber animation. We bid on sealed copies of Mac OS 9 at 2 AM and feel nothing but triumph. We have opinions about the Platinum appearance theme. We attend vintage computer festivals and come home with a Power Mac 7500 we didn't need and don't regret.
+**RetroGate exists because we refuse to accept this.**
 
-We are the collectors. The preservationists. The retrocomputing community. The people who believe a machine is never truly dead as long as it still boots — and especially not if it has an Ethernet port.
+We believe that a Macintosh Plus deserves to browse Wikipedia. That a Windows 95 machine should be able to search DuckDuckGo. That Mac OS 9 — the last truly great Classic Mac OS, fight me — should be able to reach the entire World Wide Web, including the parts that didn't exist when it was alive.
 
-**And we all hit the same wall.** The machines work. The browsers launch. But the internet — the one thing that could make a vintage Mac or PC feel *alive* again — has moved on. Every website now demands JavaScript frameworks that weigh more than an iMac G3's entire hard drive. Every image is WebP or AVIF, formats invented fifteen years after Internet Explorer 5 shipped. Every page assumes you have gigabytes of RAM when your iBook has 64 megabytes and is *proud of it*.
+RetroGate is a proxy server that sits between your vintage computer and the modern internet. It translates. It transcodes. It strips away twenty years of web bloat and delivers the content your old machine actually asked for, in a format it can actually understand.
 
-**RetroGate exists because nostalgia deserves a network connection.**
+It also has a Wayback Machine mode, because sometimes the best way to browse the web on a 1999 computer is to browse the 1999 web.
 
-It's a proxy server that sits between your vintage computer and the modern internet. It translates. It transcodes. It strips away twenty-five years of web bloat and delivers the content your old machine actually asked for, in a format it can actually understand. 🖥️ Browse Wikipedia on a Power Mac G3. Search DuckDuckGo on Windows 98. Load Apple.com on Mac OS 9 — the last truly great Classic Mac OS, fight me — and feel that spark of joy when the page actually renders in Netscape Navigator. 💻 Fire up Internet Explorer 5 on your Pismo and watch CNN load like it's 2001 again.
-
-It also has a Wayback Machine mode, because sometimes the best way to browse the web on a 1999 computer is to browse the 1999 web. Set a date, and your vintage browser sees the internet as it looked that year. Pages, images, layouts — all from the archive. It's a time machine for the machine you already have.
-
-This is for the collectors. The SheepShaver enthusiasts. The people running Mac OS 9 on real hardware *and* in emulation because one isn't enough. The ones who think "I should set up an Ethernet bridge to my iBook this weekend" is a perfectly normal Saturday plan. The crowd that sees a clamshell iBook in Tangerine and feels something.
-
-Welcome home. Your old machines have been waiting for the web to come back to them.
+This is not nostalgia. This is *infrastructure*.
 
 ---
 
@@ -79,6 +73,16 @@ If you're running **SheepShaver**, the host machine is reachable at `10.0.2.2` f
 ### Step 4: Browse
 
 Type a URL. Any URL. Watch in awe as a website built with React, Tailwind, and the hopes and dreams of a thousand npm packages gets lovingly downgraded into something your Quadra 605 can render.
+
+### The PAC File Shortcut
+
+Don't want to manually configure proxy settings? Point your browser's auto-proxy-configuration to:
+
+```
+http://retrogate/proxy.pac
+```
+
+This serves a PAC file that routes all HTTP traffic through RetroGate automatically. It's the lazy option, and we respect that.
 
 ---
 

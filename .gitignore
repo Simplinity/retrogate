@@ -6,3 +6,7 @@ xcuserdata/
 DerivedData/
 .env
 Package.resolved
+_recovered/
+_recovered_full/
+RetroGateApp_RECOVERED.swift
+*.backup

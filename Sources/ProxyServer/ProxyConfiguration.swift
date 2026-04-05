@@ -47,6 +47,8 @@ public struct ProxyConfiguration: Sendable {
     public var minifyHTML: Bool
     /// Display color depth — controls image dithering and palette reduction.
     public var colorDepth: ColorDepth
+    /// User-defined dead endpoint redirects (host → redirect URL).
+    public var deadEndpointRedirects: [String: String]
     public var onRequestLogged: (@Sendable (RequestLogData) -> Void)?
 
     public init(
@@ -58,6 +60,7 @@ public struct ProxyConfiguration: Sendable {
         transcodingBypassDomains: Set<String> = [],
         minifyHTML: Bool = false,
         colorDepth: ColorDepth = .thousands,
+        deadEndpointRedirects: [String: String] = [:],
         onRequestLogged: (@Sendable (RequestLogData) -> Void)? = nil
     ) {
         self.browsingMode = browsingMode
@@ -68,6 +71,7 @@ public struct ProxyConfiguration: Sendable {
         self.transcodingBypassDomains = transcodingBypassDomains
         self.minifyHTML = minifyHTML
         self.colorDepth = colorDepth
+        self.deadEndpointRedirects = deadEndpointRedirects
         self.onRequestLogged = onRequestLogged
     }
 }
@@ -109,4 +113,6 @@ public struct RequestLogData: Sendable {
     /// nil when Wayback is disabled or for non-Wayback responses.
     public let waybackDate: String?
     public let contentType: String?
+    /// Error message if the request failed, nil on success.
+    public var errorMessage: String? = nil
 }

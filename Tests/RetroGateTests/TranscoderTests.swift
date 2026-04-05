@@ -131,6 +131,58 @@ final class HTMLTranscoderTests: XCTestCase {
         XCTAssertEqual(props["width"], "100px")
     }
 
+    func testVendorPrefixInjection() {
+        let css = "div { border-radius: 10px; box-shadow: 0 2px 4px #000; }"
+        let result = HTMLTranscoder.prefixCSS(css)
+
+        XCTAssertTrue(result.contains("-webkit-border-radius: 10px;"))
+        XCTAssertTrue(result.contains("-moz-border-radius: 10px;"))
+        XCTAssertTrue(result.contains("-webkit-box-shadow: 0 2px 4px #000;"))
+        XCTAssertTrue(result.contains("-moz-box-shadow: 0 2px 4px #000;"))
+        // Original unprefixed properties preserved
+        XCTAssertTrue(result.contains("border-radius: 10px;"))
+        XCTAssertTrue(result.contains("box-shadow: 0 2px 4px #000;"))
+    }
+
+    func testVendorPrefixSkipsAlreadyPrefixed() {
+        let css = "-webkit-transform: rotate(45deg); transform: rotate(45deg);"
+        let result = HTMLTranscoder.prefixCSS(css)
+
+        // Should not double-prefix: -webkit-transform should appear only from the original
+        let webkitCount = result.components(separatedBy: "-webkit-transform").count - 1
+        // Original -webkit- (1) + injected -webkit- before unprefixed transform (1) = 2
+        XCTAssertEqual(webkitCount, 2)
+        // -moz- and -ms- should be injected for the unprefixed transform
+        XCTAssertTrue(result.contains("-moz-transform: rotate(45deg);"))
+        XCTAssertTrue(result.contains("-ms-transform: rotate(45deg);"))
+    }
+
+    func testVendorPrefixMinimalLevelOnly() throws {
+        let html = """
+        <html><head><style>div { border-radius: 5px; }</style></head><body><div>Test</div></body></html>
+        """
+        // Minimal level: vendor prefixes injected
+        let minimal = HTMLTranscoder(level: .minimal)
+        let minResult = try minimal.transcode(html, baseURL: URL(string: "http://example.com")!)
+        XCTAssertTrue(minResult.contains("-webkit-border-radius"))
+
+        // Moderate level: CSS stripped entirely, no prefixes
+        let moderate = HTMLTranscoder(level: .moderate)
+        let modResult = try moderate.transcode(html, baseURL: URL(string: "http://example.com")!)
+        XCTAssertFalse(modResult.contains("-webkit-border-radius"))
+        XCTAssertFalse(modResult.contains("border-radius"))
+    }
+
+    func testVendorPrefixTransformVsTransformOrigin() {
+        let css = "transform-origin: center; transform: rotate(45deg);"
+        let result = HTMLTranscoder.prefixCSS(css)
+
+        XCTAssertTrue(result.contains("-webkit-transform-origin: center;"))
+        XCTAssertTrue(result.contains("-webkit-transform: rotate(45deg);"))
+        // Verify transform-origin prefix didn't corrupt transform
+        XCTAssertFalse(result.contains("-webkit-transform-origin: rotate"))
+    }
+
     func testISO8859Encoding() throws {
         // Characters outside iso-8859-1 should be lossy-converted (not crash)
         let html = "<html><body><p>Hello \u{1F600} World \u{2603}</p></body></html>"
@@ -192,6 +244,46 @@ final class ImageTranscoderTests: XCTestCase {
         let gifData = Data([0x47, 0x49, 0x46, 0x38])
         XCTAssertFalse(gifTranscoder.needsTranscoding(gifData, forceFormat: true))
     }
+
+    func testNeedsTranscodingColorDepthModes() {
+        let jpegData = Data([0xFF, 0xD8, 0xFF, 0xE0])
+        let gifData = Data([0x47, 0x49, 0x46, 0x38])
+
+        // Monochrome, 16-color, and Thousands always need transcoding
+        let monoTranscoder = ImageTranscoder(colorDepth: .monochrome)
+        XCTAssertTrue(monoTranscoder.needsTranscoding(jpegData))
+        XCTAssertTrue(monoTranscoder.needsTranscoding(gifData))
+
+        let sixteenTranscoder = ImageTranscoder(colorDepth: .sixteenColor)
+        XCTAssertTrue(sixteenTranscoder.needsTranscoding(jpegData))
+
+        let thousandsTranscoder = ImageTranscoder(colorDepth: .thousands)
+        XCTAssertTrue(thousandsTranscoder.needsTranscoding(jpegData))
+        XCTAssertTrue(thousandsTranscoder.needsTranscoding(gifData))
+
+        // 256-color only needs transcoding if not already GIF
+        let twoFiftySixTranscoder = ImageTranscoder(colorDepth: .twoFiftySix)
+        XCTAssertTrue(twoFiftySixTranscoder.needsTranscoding(jpegData))
+        XCTAssertFalse(twoFiftySixTranscoder.needsTranscoding(gifData))
+
+        // Millions passes through JPEG and GIF (same as old default behavior)
+        let millionsTranscoder = ImageTranscoder(colorDepth: .millions)
+        XCTAssertFalse(millionsTranscoder.needsTranscoding(jpegData))
+        XCTAssertFalse(millionsTranscoder.needsTranscoding(gifData))
+    }
+
+    func testColorDepthRawValues() {
+        // Verify raw values match what config.json stores
+        XCTAssertEqual(ColorDepth.monochrome.rawValue, "monochrome")
+        XCTAssertEqual(ColorDepth.sixteenColor.rawValue, "16color")
+        XCTAssertEqual(ColorDepth.twoFiftySix.rawValue, "256color")
+        XCTAssertEqual(ColorDepth.thousands.rawValue, "16bit")
+        XCTAssertEqual(ColorDepth.millions.rawValue, "millions")
+
+        // Verify display names match classic Mac OS terminology
+        XCTAssertEqual(ColorDepth.thousands.displayName, "Thousands")
+        XCTAssertEqual(ColorDepth.millions.displayName, "Millions")
+    }
 }
 
 final class WaybackBridgeTests: XCTestCase {
@@ -241,6 +333,18 @@ final class WaybackBridgeTests: XCTestCase {
 @testable import ProxyServer
 
 final class ProxyHandlerTests: XCTestCase {
+
+    func testDeadEndpointRedirectDefaults() {
+        // Built-in defaults should contain known dead endpoints
+        XCTAssertNotNil(ProxyHTTPHandler.defaultDeadEndpoints["home.netscape.com"])
+        XCTAssertNotNil(ProxyHTTPHandler.defaultDeadEndpoints["home.microsoft.com"])
+        XCTAssertNotNil(ProxyHTTPHandler.defaultDeadEndpoints["www.geocities.com"])
+        XCTAssertNotNil(ProxyHTTPHandler.defaultDeadEndpoints["itools.mac.com"])
+        // All redirect URLs should point to archive.org
+        for (_, url) in ProxyHTTPHandler.defaultDeadEndpoints {
+            XCTAssertTrue(url.contains("web.archive.org"), "Dead endpoint redirect should point to archive.org: \(url)")
+        }
+    }
 
     func testHTMLMinification() {
         let html = """

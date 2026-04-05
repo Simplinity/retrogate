@@ -357,4 +357,36 @@ public struct HTMLTranscoder {
             """)
         }
     }
+
+    // MARK: - CSS Vendor Prefix Injection
+
+    /// Add vendor prefixes (-webkit-, -moz-, -ms-) for older browsers.
+    /// Applied in minimal transcoding mode where CSS is preserved.
+    public static func prefixCSS(_ css: String) -> String {
+        var result = css
+        let prefixable = [
+            ("border-radius", ["-webkit-border-radius", "-moz-border-radius"]),
+            ("box-shadow", ["-webkit-box-shadow", "-moz-box-shadow"]),
+            ("transition", ["-webkit-transition", "-moz-transition", "-o-transition"]),
+            ("transform", ["-webkit-transform", "-moz-transform", "-ms-transform"]),
+            ("animation", ["-webkit-animation", "-moz-animation"]),
+            ("flex", ["-webkit-flex"]),
+            ("display: flex", ["display: -webkit-flex", "display: -webkit-box"]),
+            ("display: grid", ["display: -ms-grid"]),
+            ("opacity", ["-moz-opacity"]),
+            ("user-select", ["-webkit-user-select", "-moz-user-select", "-ms-user-select"]),
+        ]
+        for (prop, prefixes) in prefixable {
+            if result.contains(prop) {
+                for prefix in prefixes.reversed() {
+                    result = result.replacingOccurrences(
+                        of: prop,
+                        with: prefix + "; " + prop
+                    )
+                }
+            }
+        }
+        return result
+    }
+
 }

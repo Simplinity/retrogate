@@ -136,6 +136,15 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         // Snapshot config at request time so UI changes take effect immediately
         let config = self.sharedConfig.value
 
+        // Dead endpoint redirection: if the host matches a known dead service,
+        // redirect the vintage browser to a revival/archive alternative.
+        if let host = originalURL.host?.lowercased(),
+           let redirect = Self.resolveDeadEndpoint(host: host, config: config) {
+            logger.info("Dead endpoint redirect: \(host) → \(redirect)")
+            sendRedirect(context: context, location: redirect)
+            return
+        }
+
         // Redirect loop detection: if we've seen this exact URL recently,
         // it's likely an HTTP↔HTTPS bounce or a multi-site carousel.
         // Break the cycle with an error page instead of looping forever.
@@ -289,6 +298,21 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
                 context.eventLoop.execute {
                     self.sendResponse(context: context, data: data, contentType: contentType, statusCode: statusCode, extraHeaders: extraHeaders)
                 }
+
+                // Prefetch sub-resources for Wayback HTML pages.
+                // Fires parallel background requests so images are cached
+                // before the vintage browser asks for them.
+                if contentType.contains("text/html"),
+                   case .wayback(let targetDate, _) = config.browsingMode {
+                    Self.prefetchWaybackImages(
+                        htmlData: data,
+                        pageURL: resolvedURL,
+                        waybackDate: targetDate,
+                        temporalCache: temporalCache,
+                        responseCache: responseCache,
+                        logger: logger
+                    )
+                }
             } catch {
                 context.eventLoop.execute {
                     logger.error("Fetch failed for \(head.uri): \(error)")
@@ -331,22 +355,6 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         // Block redirects that leave archive.org — prevents fetching live sites
         // which may have cert errors or serve modern HTML.
         let delegate = WaybackRedirectGuard()
-
-        // Origin-URL image cache: images are cached by origin URL + target date.
-        // This survives TemporalCache expiry — once an image is fetched from ANY
-        // Wayback timestamp, it stays available regardless of which timestamp is
-        // resolved next time. Scoped to target date so switching eras fetches fresh.
-        let imageExts: Set<String> = ["gif", "jpg", "jpeg", "png", "bmp", "tif", "tiff", "svg", "ico"]
-        let isImage = imageExts.contains(originalURL.pathExtension.lowercased())
-        if isImage {
-            let dateFmt = DateFormatter()
-            dateFmt.dateFormat = "yyyyMMdd"
-            let originImageKey = "wb-img:\(dateFmt.string(from: waybackDate)):\(originalURL.absoluteString)"
-            if let cached = responseCache.get(url: originImageKey) {
-                logger.debug("Origin image cache hit: \(originalURL.absoluteString)")
-                return (cached.data, cached.contentType, 200, [], nil)
-            }
-        }
 
         // Check cache — archived content is immutable, so we can cache indefinitely.
         let cacheKey = fetchURL.absoluteString
@@ -432,22 +440,12 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         }
 
         // Process content (shared with live-web pipeline)
-        let processed = try processContent(
+        return try processContent(
             data: data, contentType: contentType, statusCode: httpResponse.statusCode,
             originalURL: originalURL, acceptHeader: acceptHeader,
             configuration: configuration, resolvedWaybackDate: resolvedWaybackDate,
             httpResponse: httpResponse, logger: logger
         )
-
-        // Store transcoded images in the origin-URL cache (not transparent GIF placeholders)
-        if isImage && processed.1.starts(with: "image/") && processed.0 != Self.transparentGIF {
-            let dateFmt = DateFormatter()
-            dateFmt.dateFormat = "yyyyMMdd"
-            let originImageKey = "wb-img:\(dateFmt.string(from: waybackDate)):\(originalURL.absoluteString)"
-            responseCache.set(url: originImageKey, data: processed.0, contentType: processed.1)
-        }
-
-        return processed
     }
 
     // MARK: - Live Web Pipeline
@@ -599,6 +597,9 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
             if var text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: configuration.outputEncoding.swiftEncoding) {
                 text = text.replacingOccurrences(of: "https://", with: "http://")
                 if contentType.contains("css") {
+                    if configuration.transcodingLevel == .minimal {
+                        text = HTMLTranscoder.prefixCSS(text)
+                    }
                     if let fontFaceRegex = try? NSRegularExpression(pattern: #"@font-face\s*\{[^}]*\}"#, options: .dotMatchesLineSeparators) {
                         text = fontFaceRegex.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "")
                     }
@@ -877,6 +878,49 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         return result
     }
 
+    // MARK: - Dead Endpoint Redirection
+
+    /// Built-in dead service endpoints → revival/archive alternatives.
+    /// These are services that vintage software tries to reach but no longer exist.
+    /// User-defined redirects in config override these defaults.
+    static let defaultDeadEndpoints: [String: String] = [
+        // Netscape
+        "home.netscape.com":              "http://web.archive.org/web/1999/http://home.netscape.com/",
+        "channels.netscape.com":          "http://web.archive.org/web/1999/http://channels.netscape.com/",
+        "search.netscape.com":            "http://web.archive.org/web/2001/http://search.netscape.com/",
+        "wp.netscape.com":                "http://web.archive.org/web/2001/http://wp.netscape.com/",
+        // Internet Explorer start pages
+        "home.microsoft.com":             "http://web.archive.org/web/2001/http://home.microsoft.com/",
+        "www.msn.com":                    "http://web.archive.org/web/2001/http://www.msn.com/",
+        // Windows Update (dead, no revival)
+        "windowsupdate.microsoft.com":    "http://web.archive.org/web/2003/http://windowsupdate.microsoft.com/",
+        "v4.windowsupdate.microsoft.com": "http://web.archive.org/web/2003/http://windowsupdate.microsoft.com/",
+        // Apple services
+        "itools.mac.com":                 "http://web.archive.org/web/2002/http://itools.mac.com/",
+        "homepage.mac.com":               "http://web.archive.org/web/2003/http://homepage.mac.com/",
+        "www.mac.com":                    "http://web.archive.org/web/2002/http://www.mac.com/",
+        // RealPlayer
+        "www.real.com":                   "http://web.archive.org/web/2001/http://www.real.com/",
+        "realguide.real.com":             "http://web.archive.org/web/2001/http://realguide.real.com/",
+        // ICQ
+        "www.icq.com":                    "http://web.archive.org/web/2001/http://www.icq.com/",
+        // Excite (common 90s portal)
+        "www.excite.com":                 "http://web.archive.org/web/2001/http://www.excite.com/",
+        // AltaVista (classic search engine)
+        "www.altavista.com":              "http://web.archive.org/web/2002/http://www.altavista.com/",
+        // GeoCities
+        "www.geocities.com":              "http://web.archive.org/web/2001/http://www.geocities.com/",
+    ]
+
+    /// Check if a hostname matches a dead endpoint. User overrides take precedence.
+    private static func resolveDeadEndpoint(host: String, config: ProxyConfiguration) -> String? {
+        // User-defined redirects override built-in defaults
+        if let userRedirect = config.deadEndpointRedirects[host] {
+            return userRedirect
+        }
+        return defaultDeadEndpoints[host]
+    }
+
     /// Determine if a URL is a sub-resource (image, CSS, JS, font) rather than
     /// an HTML page navigation. Sub-resources use the temporal cache to stay on
     /// the same snapshot date; page navigations always use the configured target date.
@@ -954,6 +998,25 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
             promise.futureResult.whenFailure { error in
                 self.sendError(context: context, status: .internalServerError, message: "Search failed: \(error.localizedDescription)")
             }
+
+        case "/proxy.pac":
+            // PAC file for automatic proxy configuration.
+            // The browser already knows our IP (it's talking to us), so extract
+            // it from the Host header the browser sent in this very request.
+            let hostHeader = head.headers["Host"].first ?? ""
+            let proxyHost: String
+            let proxyPort: Int
+            if hostHeader.contains(":") {
+                let parts = hostHeader.split(separator: ":")
+                proxyHost = String(parts[0])
+                proxyPort = Int(parts[1]) ?? context.channel.localAddress?.port ?? 8080
+            } else {
+                proxyHost = hostHeader.isEmpty ? (context.channel.localAddress?.ipAddress ?? "10.0.2.2") : hostHeader
+                proxyPort = context.channel.localAddress?.port ?? 8080
+            }
+            let pac = Self.buildPACFile(proxyHost: proxyHost, port: proxyPort)
+            let data = Data(pac.utf8)
+            sendResponse(context: context, data: data, contentType: "application/x-ns-proxy-autoconfig", statusCode: 200)
 
         default:
             sendError(context: context, status: .notFound, message: "Unknown RetroGate page: \(path)")
@@ -1045,6 +1108,7 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         <b>RetroGate</b><br>
         <ul>
         <li><a href="http://retrogate/search">Search</a></li>
+        <li><a href="http://retrogate/proxy.pac">PAC File</a></li>
         </ul>
         </td></tr>
 
@@ -1175,6 +1239,19 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
     }
 
     /// Generate a PAC (Proxy Auto-Configuration) file.
+    /// Vintage browsers can load this from http://retrogate/proxy.pac to auto-configure.
+    private static func buildPACFile(proxyHost: String, port: Int) -> String {
+        return """
+        function FindProxyForURL(url, host) {
+            // Route all HTTP traffic through RetroGate
+            if (url.substring(0, 5) == "http:") {
+                return "PROXY \(proxyHost):\(port)";
+            }
+            return "DIRECT";
+        }
+        """
+    }
+
     // MARK: - Network Helpers
 
     /// Fetch with retry and exponential backoff for archive.org transient errors,
@@ -1259,6 +1336,119 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         return s
     }
 
+    // MARK: - Wayback Image Prefetching
+    //
+    // When a Wayback HTML page loads, the browser will request every <img>
+    // and background image one-by-one. Each Wayback fetch takes 2-5 seconds,
+    // so a page with 10 images means 10-20 seconds of waiting.
+    //
+    // Prefetching fires parallel background requests for all image URLs as
+    // soon as we parse the HTML — before the browser even asks. By the time
+    // the browser requests each image, it's already in the ResponseCache.
+
+    /// Extract image URLs from transcoded HTML (already encoded, but URLs are ASCII-safe).
+    private static func extractImageURLs(from htmlData: Data, baseURL: URL) -> [URL] {
+        // Try decoding with common encodings — we only need ASCII URLs
+        guard let html = String(data: htmlData, encoding: .isoLatin1)
+              ?? String(data: htmlData, encoding: .utf8)
+              ?? String(data: htmlData, encoding: .macOSRoman) else { return [] }
+
+        // Match <img src="..."> and background="..." attributes
+        // After transcoding, URLs are absolute HTTP and ASCII-safe.
+        let patterns = [
+            #"<img\b[^>]*\bsrc\s*=\s*"([^"]+)"#,   // <img src="...">
+            #"\bbackground\s*=\s*"([^"]+)"#,          // <td background="...">
+        ]
+
+        var urls = Set<URL>()
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { continue }
+            let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
+            for match in matches {
+                guard let range = Range(match.range(at: 1), in: html) else { continue }
+                let urlStr = String(html[range])
+
+                // Skip data: URIs, anchors, javascript:
+                guard !urlStr.hasPrefix("data:"),
+                      !urlStr.hasPrefix("#"),
+                      !urlStr.hasPrefix("javascript:") else { continue }
+
+                // Resolve relative URLs against the page's base URL
+                if let url = URL(string: urlStr, relativeTo: baseURL)?.absoluteURL {
+                    urls.insert(url)
+                }
+            }
+        }
+
+        return Array(urls.prefix(30))  // Cap at 30 to avoid flooding archive.org
+    }
+
+    /// Fire background fetches for all image URLs found in a Wayback HTML page.
+    /// Each fetched response is stored in the ResponseCache so subsequent
+    /// browser requests get instant cache hits.
+    private static func prefetchWaybackImages(
+        htmlData: Data,
+        pageURL: URL,
+        waybackDate: Date,
+        temporalCache: TemporalCache,
+        responseCache: ResponseCache,
+        logger: Logger
+    ) {
+        let imageURLs = extractImageURLs(from: htmlData, baseURL: pageURL)
+        guard !imageURLs.isEmpty else { return }
+
+        logger.info("Prefetching \(imageURLs.count) sub-resources for \(pageURL.host ?? "?")")
+
+        for imageURL in imageURLs {
+            Task {
+                // Use temporal cache for date consistency (same as normal request flow)
+                var fetchDate = waybackDate
+                if let domain = imageURL.host,
+                   let cachedStamp = temporalCache.get(domain: domain) {
+                    let fmt = DateFormatter()
+                    fmt.dateFormat = "yyyyMMdd"
+                    if let d = fmt.date(from: cachedStamp) {
+                        fetchDate = d
+                    }
+                }
+
+                // Construct Wayback URL (same logic as handleProxyRequest Wayback branch)
+                let bridge = WaybackBridge(targetDate: fetchDate)
+                let fetchURL = bridge.rewriteURL(imageURL)
+                let cacheKey = fetchURL.absoluteString
+
+                // Skip if already cached
+                guard responseCache.get(url: cacheKey) == nil else { return }
+
+                // Best-effort fetch — no retries, failures are non-critical.
+                // The browser's actual request will use fetchWithRetry if this misses.
+                var request = URLRequest(url: fetchURL)
+                request.timeoutInterval = 20
+                request.setValue(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                    forHTTPHeaderField: "User-Agent"
+                )
+                if let host = fetchURL.host {
+                    request.setValue(host, forHTTPHeaderField: "Host")
+                }
+
+                do {
+                    let delegate = WaybackRedirectGuard()
+                    let (data, response) = try await urlSession.data(for: request, delegate: delegate)
+                    if let http = response as? HTTPURLResponse,
+                       http.statusCode >= 200, http.statusCode < 400,
+                       let ct = http.value(forHTTPHeaderField: "Content-Type") {
+                        responseCache.set(url: cacheKey, data: data, contentType: ct)
+                        logger.debug("Prefetched: \(imageURL.lastPathComponent) (\(data.count) bytes)")
+                    }
+                } catch {
+                    // Non-critical — the browser's request will fetch it normally
+                    logger.debug("Prefetch skipped: \(imageURL.lastPathComponent)")
+                }
+            }
+        }
+    }
+
     // MARK: - Response Writing
 
     private func sendResponse(context: ChannelHandlerContext, data: Data, contentType: String, statusCode: Int, extraHeaders: [(String, String)] = []) {
@@ -1286,6 +1476,16 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         context.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
         context.close(promise: nil)
+    }
+
+    private func sendRedirect(context: ChannelHandlerContext, location: String) {
+        let html = """
+        <html><body>
+        <p>Redirecting to <a href="\(location)">\(location)</a>...</p>
+        </body></html>
+        """
+        let data = Data(html.utf8)
+        sendResponse(context: context, data: data, contentType: "text/html; charset=iso-8859-1", statusCode: 302, extraHeaders: [("Location", location)])
     }
 
     private func sendError(context: ChannelHandlerContext, status: HTTPResponseStatus, message: String) {
