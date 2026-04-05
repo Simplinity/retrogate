@@ -40,7 +40,7 @@ struct RetroGateApp: App {
         }
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
-        .defaultSize(width: 900, height: 600)
+        .defaultSize(width: 1060, height: 720)
         .commands { RetroGateCommands() }
 
         Settings {
@@ -584,6 +584,7 @@ struct ContentView: View {
                 }
             }
             .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
         } detail: {
             switch selectedTab {
             case .dashboard:
@@ -808,7 +809,7 @@ struct ContentView: View {
                             }
                             .frame(width: 60, height: 12)
                             Text("\(item.count)")
-                                .font(.system(.caption2, design: .rounded).bold())
+                                .font(.system(.caption, design: .rounded).bold())
                                 .foregroundStyle(Color.gold)
                                 .frame(width: 30, alignment: .trailing)
                         }
@@ -962,11 +963,11 @@ struct ContentView: View {
                     }
                     HStack {
                         Text("Era")
-                            .font(.caption)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(state.selectedPreset.eraDescription)
-                            .font(.system(.caption, design: .rounded))
+                            .font(.system(.callout, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -1396,11 +1397,11 @@ struct DashboardStatCard: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(Color.gold)
 
             Text(value)
-                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .font(.system(.title2, design: .rounded, weight: .semibold))
                 .foregroundStyle(.primary)
                 .contentTransition(.numericText())
                 .lineLimit(1)
@@ -1408,18 +1409,18 @@ struct DashboardStatCard: View {
 
             VStack(spacing: 1) {
                 Text(title)
-                    .font(.caption.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color.gold)
                     .textCase(.uppercase)
                 Text(detail)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 8)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 10)
         .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1439,17 +1440,17 @@ struct DashboardCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.gold)
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
             }
             content
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(14)
         .background(Color.gold.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1464,7 +1465,7 @@ struct DashboardEmptyState: View {
         VStack {
             Spacer(minLength: 0)
             Text(text)
-                .font(.body)
+                .font(.callout)
                 .foregroundStyle(.tertiary)
             Spacer(minLength: 0)
         }
