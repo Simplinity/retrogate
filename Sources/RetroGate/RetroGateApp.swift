@@ -797,7 +797,7 @@ struct ContentView: View {
                     ForEach(Array(stats.enumerated()), id: \.offset) { _, item in
                         HStack(spacing: 8) {
                             Text(item.domain)
-                                .font(.system(.caption, design: .monospaced))
+                                .font(.system(size: 13, design: .monospaced))
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -852,7 +852,7 @@ struct ContentView: View {
                                 .fill(cat.color)
                                 .frame(width: 8, height: 8)
                             Text(cat.name)
-                                .font(.caption)
+                                .font(.system(size: 13))
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(cat.count)")
@@ -924,7 +924,7 @@ struct ContentView: View {
                         .frame(height: 10)
 
                         Text("\(savings)% smaller after transcoding")
-                            .font(.system(size: 12))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.gold)
                     }
                 }
@@ -945,20 +945,20 @@ struct ContentView: View {
                     }()
                     HStack {
                         Text("Target")
-                            .font(.caption)
+                            .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(dateFormatter.string(from: state.waybackDate))
-                            .font(.system(.caption, design: .rounded).bold())
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                     HStack {
                         Text("Tolerance")
-                            .font(.caption)
+                            .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text(state.waybackToleranceMonths == 0 ? "Any date" : "\(state.waybackToleranceMonths) months")
-                            .font(.system(.caption, design: .rounded))
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
                             .foregroundStyle(Color.gold)
                     }
                     HStack {
@@ -976,12 +976,12 @@ struct ContentView: View {
 
                 HStack {
                     Text("Errors")
-                        .font(.caption)
+                        .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                     Spacer()
                     let errorRate = state.requestLog.isEmpty ? 0 : Int(Double(state.errorCount) / Double(state.requestLog.count) * 100)
                     Text(state.errorCount == 0 ? "None" : "\(state.errorCount) (\(errorRate)%)")
-                        .font(.system(.caption, design: .rounded).bold())
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(state.errorCount == 0 ? Color.gold : Color.gold.opacity(0.7))
                 }
 
@@ -990,10 +990,10 @@ struct ContentView: View {
                         ForEach(Array(state.recentErrors.prefix(2))) { error in
                             HStack(spacing: 6) {
                                 Image(systemName: "exclamationmark.triangle")
-                                    .font(.system(size: 10))
+                                    .font(.system(size: 11))
                                     .foregroundStyle(Color.gold.opacity(0.5))
                                 Text(ContentView.shortURL(error.url))
-                                    .font(.system(.caption, design: .monospaced))
+                                    .font(.system(size: 12, design: .monospaced))
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                     .foregroundStyle(.secondary)
@@ -1008,11 +1008,11 @@ struct ContentView: View {
     private func dashboardInfoRow(_ label: String, value: String, bold: Bool = false) -> some View {
         HStack {
             Text(label)
-                .font(.caption)
+                .font(.system(size: 13))
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
-                .font(bold ? .system(.caption, design: .rounded).bold() : .system(.caption, design: .rounded))
+                .font(bold ? .system(size: 13, weight: .semibold, design: .rounded) : .system(size: 13, design: .rounded))
                 .foregroundStyle(Color.gold)
         }
     }
@@ -1441,10 +1441,10 @@ struct DashboardCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.gold)
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.primary)
             }
             content
@@ -1478,12 +1478,12 @@ struct DashboardMiniStat: View {
     let label: String
     let value: String
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 3) {
             Text(value)
-                .font(.system(.caption, design: .rounded).bold())
+                .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundStyle(Color.gold)
             Text(label)
-                .font(.caption2)
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
     }
