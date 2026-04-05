@@ -21,7 +21,7 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright 2024-2026. All rights reserved.</string>
+    <string>Copyright © 2024-2026 Bruno van Branden (Simplinity). All rights reserved.</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>RetroGate needs local network access to serve as an HTTP proxy for vintage computers on your network.</string>
     <key>NSAppTransportSecurity</key>

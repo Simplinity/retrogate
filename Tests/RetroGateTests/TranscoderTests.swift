@@ -1,7 +1,13 @@
 import XCTest
+#if canImport(HTMLTranscoder)
 @testable import HTMLTranscoder
+#endif
+#if canImport(ImageTranscoder)
 @testable import ImageTranscoder
+#endif
+#if canImport(WaybackBridge)
 @testable import WaybackBridge
+#endif
 
 final class HTMLTranscoderTests: XCTestCase {
     
@@ -330,7 +336,9 @@ final class WaybackBridgeTests: XCTestCase {
 
 // MARK: - ProxyHandler Tests
 
+#if canImport(ProxyServer)
 @testable import ProxyServer
+#endif
 
 final class ProxyHandlerTests: XCTestCase {
 

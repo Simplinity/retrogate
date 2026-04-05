@@ -1,7 +1,6 @@
 .DS_Store
 .build/
 .swiftpm/
-*.xcodeproj/
 xcuserdata/
 DerivedData/
 .env
@@ -10,3 +9,5 @@ _recovered/
 _recovered_full/
 RetroGateApp_RECOVERED.swift
 *.backup
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/

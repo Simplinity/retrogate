@@ -1,6 +1,10 @@
 import Foundation
+#if canImport(HTMLTranscoder)
 import HTMLTranscoder
+#endif
+#if canImport(ImageTranscoder)
 import ImageTranscoder
+#endif
 
 // MARK: - Browsing Mode
 

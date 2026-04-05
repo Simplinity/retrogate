@@ -2,9 +2,15 @@ import NIO
 import NIOHTTP1
 import Logging
 import Foundation
+#if canImport(HTMLTranscoder)
 import HTMLTranscoder
+#endif
+#if canImport(ImageTranscoder)
 import ImageTranscoder
+#endif
+#if canImport(WaybackBridge)
 import WaybackBridge
+#endif
 import SwiftSoup
 
 /// Handles incoming HTTP proxy requests from vintage browsers.

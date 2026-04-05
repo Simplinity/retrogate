@@ -1,8 +1,14 @@
 import SwiftUI
 import Logging
+#if canImport(ProxyServer)
 import ProxyServer
+#endif
+#if canImport(HTMLTranscoder)
 import HTMLTranscoder
+#endif
+#if canImport(ImageTranscoder)
 import ImageTranscoder
+#endif
 
 // MARK: - Gold Accent
 
@@ -705,17 +711,27 @@ struct ContentView: View {
             .accessibilityLabel(state.isRunning ? "Proxy running" : "Proxy stopped")
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(state.isRunning ? "Proxy Running" : "Proxy Stopped")
-                        .font(.headline)
-                        .foregroundStyle(state.isRunning ? Color.gold : .secondary)
-                    if state.waybackEnabled {
-                        Text("Wayback")
-                            .font(.caption.bold())
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.gold.opacity(0.15), in: Capsule())
-                            .foregroundStyle(Color.gold)
+                HStack(spacing: 4) {
+                    if state.isRunning {
+                        if state.waybackEnabled {
+                            Text("Proxy running in ")
+                                .font(.headline)
+                                .foregroundStyle(Color.gold)
+                            + Text("Wayback")
+                                .font(.headline.bold())
+                                .foregroundStyle(Color.gold)
+                            + Text(" mode")
+                                .font(.headline)
+                                .foregroundStyle(Color.gold)
+                        } else {
+                            Text("Proxy running")
+                                .font(.headline)
+                                .foregroundStyle(Color.gold)
+                        }
+                    } else {
+                        Text("Proxy Stopped")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 HStack(spacing: 6) {
@@ -736,12 +752,12 @@ struct ContentView: View {
                     .accessibilityLabel("Copy proxy address")
                     Text("·").foregroundStyle(.quaternary)
                     Text(state.selectedPreset.osName)
-                        .font(.callout)
+                        .font(.system(.callout, design: .monospaced))
                         .foregroundStyle(.primary)
                     Text("·").foregroundStyle(.quaternary)
                     Text(state.resolution.label)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .font(.system(.callout, design: .monospaced))
+                        .foregroundStyle(.primary)
                 }
             }
 
@@ -1754,6 +1770,13 @@ struct AboutSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+
+            Divider()
+                .padding(.horizontal, 60)
+
+            Text("© 2024-2026 Bruno van Branden (Simplinity)")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
 
             Spacer()
         }

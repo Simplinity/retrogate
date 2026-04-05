@@ -1,0 +1,641 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		047FEEDF4A6A44C7246C3CE7 /* ProxyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */; };
+		0D7886467CCCF365EDB0D266 /* ProxyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39520E74309A5500DBEC4F6C /* ProxyHandler.swift */; };
+		0E77BD241FDD01B0B4A5A181 /* NIOPosix in Frameworks */ = {isa = PBXBuildFile; productRef = 6DF704F53856B44B587AC605 /* NIOPosix */; };
+		20F71BDFDF1B965660CD616A /* ImageTranscoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA089AAC87CA6A6D49797678 /* ImageTranscoder.swift */; };
+		2BF27ADE54DB10B1C6C26671 /* TranscoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75591393CB69816132E71061 /* TranscoderTests.swift */; };
+		2DFAB36263112193D7F0E8C4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FE4D42FBE6FFFF364EA9EDC1 /* Assets.xcassets */; };
+		3C834DCBD0DC02484CFECAFA /* ResponseCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED34BBEC832185A9EB98D9A /* ResponseCache.swift */; };
+		3D46D25EF67515E8AD1631C4 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = D703CA232A1E734A8EF144F3 /* NIO */; };
+		496FFBD78ED32F5409E73173 /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = 6E606369C368A13E167FB1C6 /* NIOHTTP1 */; };
+		4E2045BE9F1FFE035E4552B6 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = DCD1DD5A59D856F8BB619931 /* SwiftSoup */; };
+		8564849C53252A0ABF70FFA0 /* RedirectTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9936BDA1EF4E7676BA65FE /* RedirectTracker.swift */; };
+		9BFAD63027DF1A3C59D5C76A /* ProxyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6688AF1A562F831CE58EAD /* ProxyServer.swift */; };
+		B04CA169D540C9D5BE972289 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 7C1F01C7A1C81AA5012A4DE2 /* ArgumentParser */; };
+		B34B5EA6856374150B12EDF5 /* TemporalCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC00CE3AF320976BF872116F /* TemporalCache.swift */; };
+		C8D7A654FDD762590BB6036E /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 3A79BE4D647742AAA02C6600 /* Logging */; };
+		C8E7D2296E0929A2ACF50A81 /* RetroGateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FB5626E134D68887F712CC /* RetroGateApp.swift */; };
+		DE785790E5A1C2000E55B8C7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */; };
+		EC94EB886F5AA1525AF5CE8D /* HTMLTranscoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC9C94357F6CFBB8E7DD7ED /* HTMLTranscoder.swift */; };
+		F24E84D5DB09227FA6D7943D /* NIOExtras in Frameworks */ = {isa = PBXBuildFile; productRef = F032EFE06494BA8D26BAC152 /* NIOExtras */; };
+		F475E5B663B1B367D1B14DFB /* NIOCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8DE63A61FE6F48D332CDE07F /* NIOCore */; };
+		F9BC1B56858C3DA7BB7D8D50 /* WaybackBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BA702C83D51F24019222717 /* WaybackBridge.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9568B18A4A0750487BBC169E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B4EE11AB4116CABAB908CE87 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C542699CF581131B0988D7A0;
+			remoteInfo = RetroGate;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		14AF3C1D9F37326F234539D7 /* RetroGate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroGate.entitlements; sourceTree = "<group>"; };
+		39520E74309A5500DBEC4F6C /* ProxyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyHandler.swift; sourceTree = "<group>"; };
+		3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyConfiguration.swift; sourceTree = "<group>"; };
+		5BA702C83D51F24019222717 /* WaybackBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaybackBridge.swift; sourceTree = "<group>"; };
+		5ED34BBEC832185A9EB98D9A /* ResponseCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCache.swift; sourceTree = "<group>"; };
+		75591393CB69816132E71061 /* TranscoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscoderTests.swift; sourceTree = "<group>"; };
+		94FB5626E134D68887F712CC /* RetroGateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroGateApp.swift; sourceTree = "<group>"; };
+		95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		BB70DD42D2D9B6177A503E9B /* RetroGate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroGate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DC00CE3AF320976BF872116F /* TemporalCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporalCache.swift; sourceTree = "<group>"; };
+		E528FA82BF2F651863584CF0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		EA089AAC87CA6A6D49797678 /* ImageTranscoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTranscoder.swift; sourceTree = "<group>"; };
+		EA9936BDA1EF4E7676BA65FE /* RedirectTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RedirectTracker.swift; sourceTree = "<group>"; };
+		EC6688AF1A562F831CE58EAD /* ProxyServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyServer.swift; sourceTree = "<group>"; };
+		F7EFF74A300E4F37CD7CBA79 /* RetroGateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RetroGateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FE4D42FBE6FFFF364EA9EDC1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FFC9C94357F6CFBB8E7DD7ED /* HTMLTranscoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTranscoder.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		35873B61500C4B42B246B677 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D46D25EF67515E8AD1631C4 /* NIO in Frameworks */,
+				496FFBD78ED32F5409E73173 /* NIOHTTP1 in Frameworks */,
+				F475E5B663B1B367D1B14DFB /* NIOCore in Frameworks */,
+				0E77BD241FDD01B0B4A5A181 /* NIOPosix in Frameworks */,
+				F24E84D5DB09227FA6D7943D /* NIOExtras in Frameworks */,
+				4E2045BE9F1FFE035E4552B6 /* SwiftSoup in Frameworks */,
+				B04CA169D540C9D5BE972289 /* ArgumentParser in Frameworks */,
+				C8D7A654FDD762590BB6036E /* Logging in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4F9141D7E0E24C2A1E9781AF /* WaybackBridge */ = {
+			isa = PBXGroup;
+			children = (
+				5BA702C83D51F24019222717 /* WaybackBridge.swift */,
+			);
+			path = WaybackBridge;
+			sourceTree = "<group>";
+		};
+		5CD0C32338A1325B469C57DD /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				D8FB8A44A145EBFB40EE1E9B /* RetroGateTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		6D1D1436F1578768866DEB48 /* HTMLTranscoder */ = {
+			isa = PBXGroup;
+			children = (
+				FFC9C94357F6CFBB8E7DD7ED /* HTMLTranscoder.swift */,
+			);
+			path = HTMLTranscoder;
+			sourceTree = "<group>";
+		};
+		855BF405168C8633D3385FC6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BB70DD42D2D9B6177A503E9B /* RetroGate.app */,
+				F7EFF74A300E4F37CD7CBA79 /* RetroGateTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B8182FC31A73F50A08261AD6 = {
+			isa = PBXGroup;
+			children = (
+				E2B9BBF217A517B76C853A7C /* Sources */,
+				5CD0C32338A1325B469C57DD /* Tests */,
+				855BF405168C8633D3385FC6 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CC48A42A43B0C799C30E809D /* ProxyServer */ = {
+			isa = PBXGroup;
+			children = (
+				3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */,
+				39520E74309A5500DBEC4F6C /* ProxyHandler.swift */,
+				EC6688AF1A562F831CE58EAD /* ProxyServer.swift */,
+				EA9936BDA1EF4E7676BA65FE /* RedirectTracker.swift */,
+				5ED34BBEC832185A9EB98D9A /* ResponseCache.swift */,
+				DC00CE3AF320976BF872116F /* TemporalCache.swift */,
+			);
+			path = ProxyServer;
+			sourceTree = "<group>";
+		};
+		D05DD6E95AEE029D9D01506B /* ImageTranscoder */ = {
+			isa = PBXGroup;
+			children = (
+				EA089AAC87CA6A6D49797678 /* ImageTranscoder.swift */,
+			);
+			path = ImageTranscoder;
+			sourceTree = "<group>";
+		};
+		D8FB8A44A145EBFB40EE1E9B /* RetroGateTests */ = {
+			isa = PBXGroup;
+			children = (
+				75591393CB69816132E71061 /* TranscoderTests.swift */,
+			);
+			path = RetroGateTests;
+			sourceTree = "<group>";
+		};
+		E2B9BBF217A517B76C853A7C /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				6D1D1436F1578768866DEB48 /* HTMLTranscoder */,
+				D05DD6E95AEE029D9D01506B /* ImageTranscoder */,
+				CC48A42A43B0C799C30E809D /* ProxyServer */,
+				E653F8BD00C8644640F14FB1 /* RetroGate */,
+				4F9141D7E0E24C2A1E9781AF /* WaybackBridge */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		E653F8BD00C8644640F14FB1 /* RetroGate */ = {
+			isa = PBXGroup;
+			children = (
+				FE4D42FBE6FFFF364EA9EDC1 /* Assets.xcassets */,
+				E528FA82BF2F651863584CF0 /* Info.plist */,
+				95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */,
+				14AF3C1D9F37326F234539D7 /* RetroGate.entitlements */,
+				94FB5626E134D68887F712CC /* RetroGateApp.swift */,
+			);
+			path = RetroGate;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		051B3F5B7B516B251BC860DD /* RetroGateTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF9CCB9077A1CF9CCC2E3496 /* Build configuration list for PBXNativeTarget "RetroGateTests" */;
+			buildPhases = (
+				8D78F9D0513A7CF4EA383EF6 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7B3A6B99B01816A9DF9EF3E0 /* PBXTargetDependency */,
+			);
+			name = RetroGateTests;
+			packageProductDependencies = (
+			);
+			productName = RetroGateTests;
+			productReference = F7EFF74A300E4F37CD7CBA79 /* RetroGateTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C542699CF581131B0988D7A0 /* RetroGate */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C7428CD36529D5BD623F6094 /* Build configuration list for PBXNativeTarget "RetroGate" */;
+			buildPhases = (
+				42B4A2120F2FBC1664D319E6 /* Sources */,
+				7281BFF6DDF70D3615D9A761 /* Resources */,
+				35873B61500C4B42B246B677 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RetroGate;
+			packageProductDependencies = (
+				D703CA232A1E734A8EF144F3 /* NIO */,
+				6E606369C368A13E167FB1C6 /* NIOHTTP1 */,
+				8DE63A61FE6F48D332CDE07F /* NIOCore */,
+				6DF704F53856B44B587AC605 /* NIOPosix */,
+				F032EFE06494BA8D26BAC152 /* NIOExtras */,
+				DCD1DD5A59D856F8BB619931 /* SwiftSoup */,
+				7C1F01C7A1C81AA5012A4DE2 /* ArgumentParser */,
+				3A79BE4D647742AAA02C6600 /* Logging */,
+			);
+			productName = RetroGate;
+			productReference = BB70DD42D2D9B6177A503E9B /* RetroGate.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B4EE11AB4116CABAB908CE87 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					C542699CF581131B0988D7A0 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0BB7366639FC92E06BA6DA02 /* Build configuration list for PBXProject "RetroGate" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = B8182FC31A73F50A08261AD6;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				76C3DEA207D38DFCDE8F2BC4 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				7E49B24094E4D36EBF8C060B /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				FEB0FBF8034C488A412C7AEE /* XCRemoteSwiftPackageReference "swift-log" */,
+				1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */,
+				A066C8B3B577F38AC5FF7B5A /* XCRemoteSwiftPackageReference "swift-nio-extras" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 855BF405168C8633D3385FC6 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C542699CF581131B0988D7A0 /* RetroGate */,
+				051B3F5B7B516B251BC860DD /* RetroGateTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7281BFF6DDF70D3615D9A761 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DFAB36263112193D7F0E8C4 /* Assets.xcassets in Resources */,
+				DE785790E5A1C2000E55B8C7 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		42B4A2120F2FBC1664D319E6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EC94EB886F5AA1525AF5CE8D /* HTMLTranscoder.swift in Sources */,
+				20F71BDFDF1B965660CD616A /* ImageTranscoder.swift in Sources */,
+				047FEEDF4A6A44C7246C3CE7 /* ProxyConfiguration.swift in Sources */,
+				0D7886467CCCF365EDB0D266 /* ProxyHandler.swift in Sources */,
+				9BFAD63027DF1A3C59D5C76A /* ProxyServer.swift in Sources */,
+				8564849C53252A0ABF70FFA0 /* RedirectTracker.swift in Sources */,
+				3C834DCBD0DC02484CFECAFA /* ResponseCache.swift in Sources */,
+				C8E7D2296E0929A2ACF50A81 /* RetroGateApp.swift in Sources */,
+				B34B5EA6856374150B12EDF5 /* TemporalCache.swift in Sources */,
+				F9BC1B56858C3DA7BB7D8D50 /* WaybackBridge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8D78F9D0513A7CF4EA383EF6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BF27ADE54DB10B1C6C26671 /* TranscoderTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7B3A6B99B01816A9DF9EF3E0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C542699CF581131B0988D7A0 /* RetroGate */;
+			targetProxy = 9568B18A4A0750487BBC169E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		21C5748C5F8D4A9CDA9CCA1D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		58EB4799378B5D2F2978666F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/RetroGate/RetroGate.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/RetroGate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunowernimont.retrogate;
+				PRODUCT_NAME = RetroGate;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		5F7B92482BAFD03A6E827E6E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunowernimont.RetroGateTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RetroGate.app/Contents/MacOS/RetroGate";
+			};
+			name = Debug;
+		};
+		7A4DEC8E782780CFB0033FEC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7CC1675E0D8F11A7284AA67A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunowernimont.RetroGateTests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RetroGate.app/Contents/MacOS/RetroGate";
+			};
+			name = Release;
+		};
+		C02B506F07C9E4EA265ABB81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/RetroGate/RetroGate.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/RetroGate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunowernimont.retrogate;
+				PRODUCT_NAME = RetroGate;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0BB7366639FC92E06BA6DA02 /* Build configuration list for PBXProject "RetroGate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A4DEC8E782780CFB0033FEC /* Debug */,
+				21C5748C5F8D4A9CDA9CCA1D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C7428CD36529D5BD623F6094 /* Build configuration list for PBXNativeTarget "RetroGate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C02B506F07C9E4EA265ABB81 /* Debug */,
+				58EB4799378B5D2F2978666F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FF9CCB9077A1CF9CCC2E3496 /* Build configuration list for PBXNativeTarget "RetroGateTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F7B92482BAFD03A6E827E6E /* Debug */,
+				7CC1675E0D8F11A7284AA67A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.65.0;
+			};
+		};
+		76C3DEA207D38DFCDE8F2BC4 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
+		7E49B24094E4D36EBF8C060B /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
+		A066C8B3B577F38AC5FF7B5A /* XCRemoteSwiftPackageReference "swift-nio-extras" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-nio-extras.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.22.0;
+			};
+		};
+		FEB0FBF8034C488A412C7AEE /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3A79BE4D647742AAA02C6600 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEB0FBF8034C488A412C7AEE /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+		6DF704F53856B44B587AC605 /* NIOPosix */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOPosix;
+		};
+		6E606369C368A13E167FB1C6 /* NIOHTTP1 */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOHTTP1;
+		};
+		7C1F01C7A1C81AA5012A4DE2 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7E49B24094E4D36EBF8C060B /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
+		8DE63A61FE6F48D332CDE07F /* NIOCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIOCore;
+		};
+		D703CA232A1E734A8EF144F3 /* NIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1D49E2A4553641CF830DE4C0 /* XCRemoteSwiftPackageReference "swift-nio" */;
+			productName = NIO;
+		};
+		DCD1DD5A59D856F8BB619931 /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76C3DEA207D38DFCDE8F2BC4 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+		F032EFE06494BA8D26BAC152 /* NIOExtras */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A066C8B3B577F38AC5FF7B5A /* XCRemoteSwiftPackageReference "swift-nio-extras" */;
+			productName = NIOExtras;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B4EE11AB4116CABAB908CE87 /* Project object */;
+}
