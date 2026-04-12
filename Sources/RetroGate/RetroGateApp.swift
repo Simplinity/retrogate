@@ -1741,7 +1741,7 @@ struct AboutSettingsView: View {
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Version 1.1.0")
+            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
