@@ -37,6 +37,9 @@ struct RetroGateApp: App {
                 .onAppear {
                     NSApplication.shared.activate(ignoringOtherApps: true)
                 }
+                .task {
+                    await UpdateChecker.checkForUpdate()
+                }
         }
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
@@ -514,6 +517,7 @@ struct RequestLogEntry: Identifiable {
 struct ContentView: View {
     @EnvironmentObject var state: ProxyState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var previousPlatform: VintagePlatform = .mac
 
     private var localIP: String {
         var address = "127.0.0.1"
@@ -623,7 +627,7 @@ struct ContentView: View {
                 .accessibilityLabel("Wayback Machine mode")
                 .accessibilityValue(state.waybackEnabled ? "enabled" : "disabled")
                 .accessibilityHint("Toggle between live web and archived Wayback Machine browsing")
-                .onChange(of: state.waybackEnabled) {
+                .onChange(of: state.waybackEnabled) { _ in
                     if state.waybackEnabled {
                         state.waybackDate = state.selectedPreset.suggestedWaybackDate
                     }
@@ -707,7 +711,7 @@ struct ContentView: View {
                 Image(systemName: state.isRunning ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
                     .font(.system(size: 22))
                     .foregroundStyle(state.isRunning ? Color.gold : Color.gold.opacity(0.35))
-                    .symbolEffect(.pulse, options: .repeating, isActive: state.isRunning)
+                    // symbolEffect removed for macOS 13 compatibility
             }
             .accessibilityLabel(state.isRunning ? "Proxy running" : "Proxy stopped")
 
@@ -717,17 +721,17 @@ struct ContentView: View {
                         if state.waybackEnabled {
                             Text("Proxy running in ")
                                 .font(.headline)
-                                .foregroundStyle(Color.gold)
+                                .foregroundColor(Color.gold)
                             + Text("Wayback")
                                 .font(.headline.bold())
-                                .foregroundStyle(Color.gold)
+                                .foregroundColor(Color.gold)
                             + Text(" mode")
                                 .font(.headline)
-                                .foregroundStyle(Color.gold)
+                                .foregroundColor(Color.gold)
                         } else {
                             Text("Proxy running")
                                 .font(.headline)
-                                .foregroundStyle(Color.gold)
+                                .foregroundColor(Color.gold)
                         }
                     } else {
                         Text("Proxy Stopped")
@@ -1081,8 +1085,8 @@ struct ContentView: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: state.platform) { oldPlatform, newPlatform in
-            state.platformMemory[oldPlatform] = ProxyState.PlatformMemory(
+        .onChange(of: state.platform) { newPlatform in
+            state.platformMemory[previousPlatform] = ProxyState.PlatformMemory(
                 presetId: state.presetId, resolution: state.resolution, colorDepth: state.colorDepth
             )
             if let mem = state.platformMemory[newPlatform] {
@@ -1096,7 +1100,7 @@ struct ContentView: View {
             }
             state.saveSettings(); state.syncConfig()
         }
-        .onChange(of: state.presetId) {
+        .onChange(of: state.presetId) { _ in
             guard !state.isRestoringPlatform else { return }
             if let preset = VintagePreset.all.first(where: { $0.id == state.presetId }) {
                 state.resolution = preset.defaultResolution
@@ -1106,8 +1110,8 @@ struct ContentView: View {
             }
             state.saveSettings(); state.syncConfig()
         }
-        .onChange(of: state.resolution) { state.saveSettings(); state.syncConfig() }
-        .onChange(of: state.colorDepth) { state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.resolution) { _ in state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.colorDepth) { _ in state.saveSettings(); state.syncConfig() }
     }
 
     private var transcodingLevelLabel: String {
@@ -1148,14 +1152,14 @@ struct ContentView: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: state.waybackEnabled) {
+        .onChange(of: state.waybackEnabled) { _ in
             if state.waybackEnabled {
                 state.waybackDate = state.selectedPreset.suggestedWaybackDate
             }
             state.saveSettings(); state.syncConfig()
         }
-        .onChange(of: state.waybackDate) { state.saveSettings(); state.syncConfig() }
-        .onChange(of: state.waybackToleranceMonths) { state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.waybackDate) { _ in state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.waybackToleranceMonths) { _ in state.saveSettings(); state.syncConfig() }
     }
 
     // MARK: - Request Log
@@ -1163,11 +1167,17 @@ struct ContentView: View {
     private var requestLogView: some View {
         VStack {
             if state.requestLog.isEmpty {
-                ContentUnavailableView(
-                    "No Requests Yet",
-                    systemImage: "list.bullet.rectangle",
-                    description: Text("Requests will appear here as your vintage Mac browses the web.")
-                )
+                VStack(spacing: 8) {
+                    Image(systemName: "list.bullet.rectangle")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary)
+                    Text("No Requests Yet")
+                        .font(.headline)
+                    Text("Requests will appear here as your vintage Mac browses the web.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Table(state.requestLog) {
                     TableColumn("Time") { entry in
@@ -1235,11 +1245,17 @@ struct ContentView: View {
     private var waybackTimelineView: some View {
         VStack {
             if waybackEntries.isEmpty {
-                ContentUnavailableView(
-                    "No Wayback Pages Yet",
-                    systemImage: "clock.arrow.circlepath",
-                    description: Text("Pages served from the Wayback Machine will appear here, showing the actual archive date vs your target date.")
-                )
+                VStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary)
+                    Text("No Wayback Pages Yet")
+                        .font(.headline)
+                    Text("Pages served from the Wayback Machine will appear here, showing the actual archive date vs your target date.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Table(waybackEntries) {
                     TableColumn("Time") { entry in
@@ -1640,7 +1656,7 @@ struct GeneralSettingsView: View {
                     TextField("Port", value: $state.port, format: .number.grouping(.never))
                         .frame(width: 100)
                         .accessibilityLabel("Proxy server port")
-                        .onChange(of: state.port) { _, newPort in
+                        .onChange(of: state.port) { newPort in
                             pendingPort = newPort
                         }
                     if pendingPort != nil {
@@ -1672,7 +1688,7 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: state.minifyHTML) { state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.minifyHTML) { _ in state.saveSettings(); state.syncConfig() }
     }
 }
 
@@ -1706,8 +1722,8 @@ struct AdvancedSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: state.transcodingBypassDomainsText) { state.saveSettings(); state.syncConfig() }
-        .onChange(of: state.deadEndpointRedirectsText) { state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.transcodingBypassDomainsText) { _ in state.saveSettings(); state.syncConfig() }
+        .onChange(of: state.deadEndpointRedirectsText) { _ in state.saveSettings(); state.syncConfig() }
     }
 }
 
@@ -1725,7 +1741,7 @@ struct AboutSettingsView: View {
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Version 1.0.0")
+            Text("Version 1.1.0")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 

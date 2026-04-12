@@ -5,7 +5,7 @@
 PRODUCT_BUNDLE_IDENTIFIER = com.brunowernimont.retrogate
 
 // Deployment target
-MACOSX_DEPLOYMENT_TARGET = 14.0
+MACOSX_DEPLOYMENT_TARGET = 13.0
 
 // Code signing (change team ID to your own)
 // CODE_SIGN_IDENTITY = Apple Distribution
