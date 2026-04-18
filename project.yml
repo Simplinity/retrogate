@@ -2,7 +2,7 @@ name: RetroGate
 options:
   bundleIdPrefix: com.brunowernimont
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "13.0"
   xcodeVersion: "16.0"
   generateEmptyDirectories: false
   createIntermediateGroups: true
@@ -54,7 +54,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         SWIFT_VERSION: "5.9"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
         CURRENT_PROJECT_VERSION: 3
         MARKETING_VERSION: "1.2.0"
         GENERATE_INFOPLIST_FILE: NO

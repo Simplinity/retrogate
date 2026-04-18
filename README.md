@@ -25,7 +25,7 @@ RetroGate is a macOS proxy server that bridges the gap between classic Macintosh
 
 ## Requirements
 
-- macOS 14+ (Sonoma) on Apple Silicon
+- macOS 13+ (Ventura) on Apple Silicon or Intel
 - Swift 5.9+
 - A vintage Mac on the same network (Ethernet via bridge, or LocalTalk→Ethernet adapter)
 
