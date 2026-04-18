@@ -44,12 +44,16 @@ struct RetroGateApp: App {
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
         .defaultSize(width: 1120, height: 760)
-        .commands { RetroGateCommands() }
+        .commands { RetroGateCommands(state: proxyState) }
 
-        Settings {
-            SettingsView()
-                .environmentObject(proxyState)
+        // Custom About window — replaces the default "About RetroGate" panel
+        // so it stays consistent with the About content reused elsewhere.
+        Window("About RetroGate", id: "about") {
+            AboutSettingsView()
+                .frame(width: 380, height: 420)
         }
+        .windowResizability(.contentSize)
+        .commandsRemoved()
 
         MenuBarExtra {
             MenuBarView()
@@ -278,6 +282,19 @@ extension SavedSettings {
 
 // MARK: - App State
 
+/// The items shown in the main window's sidebar. Shared with ProxyState so the
+/// app-menu Settings command (Cmd+,) can navigate without digging through views.
+enum SidebarItem: String, CaseIterable {
+    case dashboard = "Dashboard"
+    case requestLog = "Request Log"
+    case cache = "Cache"
+    case waybackTimeline = "Wayback Timeline"
+    case vintageComputer = "Vintage Computer"
+    case waybackMachine = "Wayback Machine"
+    case general = "General"
+    case advanced = "Advanced"
+}
+
 @MainActor
 class ProxyState: ObservableObject {
     @Published var isRunning = true
@@ -319,6 +336,9 @@ class ProxyState: ObservableObject {
     @Published var cacheOfflineMode: Bool = false {
         didSet { saveSettings(); syncConfig() }
     }
+    /// Which sidebar item is currently active. Lives on the shared state so
+    /// the Cmd+, command (and others) can navigate without digging through views.
+    @Published var selectedTab: SidebarItem = .dashboard
 
     struct ErrorEntry: Identifiable {
         let id = UUID()
@@ -582,20 +602,10 @@ struct ContentView: View {
         return address
     }
 
-    @State private var selectedTab: SidebarItem = .dashboard
-
-    enum SidebarItem: String, CaseIterable {
-        case dashboard = "Dashboard"
-        case requestLog = "Request Log"
-        case cache = "Cache"
-        case waybackTimeline = "Wayback Timeline"
-        case vintageComputer = "Vintage Computer"
-        case waybackMachine = "Wayback Machine"
-    }
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $selectedTab) {
+            List(selection: $state.selectedTab) {
                 Section("Monitor") {
                     Label("Dashboard", systemImage: "gauge")
                         .tag(SidebarItem.dashboard)
@@ -640,12 +650,21 @@ struct ContentView: View {
                     .tag(SidebarItem.waybackMachine)
                     .accessibilityLabel("Wayback Machine")
                     .accessibilityValue(state.waybackEnabled ? "enabled" : "disabled")
+
+                    Label("General", systemImage: "gear")
+                        .tag(SidebarItem.general)
+                        .accessibilityLabel("General Settings")
+                        .accessibilityHint("Proxy port and transcoding options")
+                    Label("Advanced", systemImage: "slider.horizontal.3")
+                        .tag(SidebarItem.advanced)
+                        .accessibilityLabel("Advanced Settings")
+                        .accessibilityHint("Bypass domains and dead endpoint redirects")
                 }
             }
             .listStyle(.sidebar)
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         } detail: {
-            switch selectedTab {
+            switch state.selectedTab {
             case .dashboard:
                 dashboardView
             case .requestLog:
@@ -658,6 +677,10 @@ struct ContentView: View {
                 vintageComputerView
             case .waybackMachine:
                 waybackMachineView
+            case .general:
+                GeneralSettingsView()
+            case .advanced:
+                AdvancedSettingsView()
             }
         }
         .toolbar(id: "main") {
@@ -1516,9 +1539,32 @@ extension FocusedValues {
 }
 
 struct RetroGateCommands: Commands {
+    /// Shared app state, handed in by the App body so commands can trigger
+    /// navigation (e.g. Cmd+, → General sidebar tab).
+    @ObservedObject var state: ProxyState
+
     @FocusedValue(\.clearLog) var clearLogAction
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        // Replace the default macOS "About RetroGate" panel with our own window
+        // so the app-menu About matches the Settings → About view exactly.
+        CommandGroup(replacing: .appInfo) {
+            Button("About RetroGate") {
+                openWindow(id: "about")
+            }
+        }
+
+        // The Settings window is gone; ⌘, now jumps to the General sidebar tab.
+        // Still labelled "Settings…" so it keeps its familiar menu-bar spot.
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") {
+                openWindow(id: "main")
+                state.selectedTab = .general
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
+
         CommandGroup(after: .toolbar) {
             Button("Clear Request Log") {
                 clearLogAction?.perform()
@@ -1528,23 +1574,7 @@ struct RetroGateCommands: Commands {
     }
 }
 
-// MARK: - Settings (Cmd+,)
-
-struct SettingsView: View {
-    @EnvironmentObject var state: ProxyState
-
-    var body: some View {
-        TabView {
-            GeneralSettingsView()
-                .tabItem { Label("General", systemImage: "gear") }
-            AdvancedSettingsView()
-                .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
-            AboutSettingsView()
-                .tabItem { Label("About", systemImage: "info.circle") }
-        }
-        .frame(width: 480, height: 360)
-    }
-}
+// MARK: - Settings (now live in the sidebar; Cmd+, navigates to General)
 
 struct GeneralSettingsView: View {
     @EnvironmentObject var state: ProxyState
@@ -1573,7 +1603,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            Section("Transcoding") {
+            Section {
                 Toggle("Minify HTML", isOn: $state.minifyHTML)
                     .accessibilityLabel("Minify HTML output")
                     .accessibilityHint("Reduces bandwidth by removing whitespace and comments from HTML")
@@ -1586,6 +1616,10 @@ struct GeneralSettingsView: View {
                     }
                 }
                 .accessibilityElement(children: .combine)
+            } header: {
+                Text("Transcoding")
+            } footer: {
+                Text("Minify HTML strips comments and whitespace. Trims 20–40% off page size without changing how pages look — a real difference on modem-era connections.")
             }
         }
         .formStyle(.grouped)
@@ -1607,7 +1641,7 @@ struct AdvancedSettingsView: View {
             } header: {
                 Text("Transcoding Bypass Domains")
             } footer: {
-                Text("One domain per line. These sites skip HTML transcoding.")
+                Text("Skip HTML transcoding for sites already built for vintage browsers — 68kmla.org, macintoshgarden.org, and similar. Listed domains still get HTTPS downgrading and encoding conversion, just no HTML surgery. One domain per line; subdomains match automatically.")
             }
 
             Section {
@@ -1619,7 +1653,7 @@ struct AdvancedSettingsView: View {
             } header: {
                 Text("Dead Endpoint Redirects")
             } footer: {
-                Text("Format: host=url (one per line). Overrides built-in defaults.")
+                Text("Rewrite requests to specific hosts before they go out — handy for keeping vintage defaults alive. A browser asking for home.netscape.com can be silently pointed at its Wayback snapshot. Format: host=url, one per line. Overrides built-in defaults.")
             }
         }
         .formStyle(.grouped)
@@ -1630,30 +1664,33 @@ struct AdvancedSettingsView: View {
 
 struct AboutSettingsView: View {
     var body: some View {
-        VStack(spacing: 12) {
+        // Outer spacing (28) separates the three semantic blocks —
+        // replaces the old hairline dividers. Inner VStacks keep related
+        // lines tight (12 between the name group, 2 between the "Built with"
+        // label and its payload).
+        VStack(spacing: 28) {
             Spacer()
 
-            Image(systemName: "antenna.radiowaves.left.and.right")
-                .font(.system(size: 40))
-                .foregroundStyle(Color.gold)
-                .accessibilityHidden(true)
+            VStack(spacing: 12) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 40))
+                    .foregroundStyle(Color.gold)
+                    .accessibilityHidden(true)
 
-            Text("RetroGate")
-                .font(.title2.bold())
-                .accessibilityAddTraits(.isHeader)
+                Text("RetroGate")
+                    .font(.title2.bold())
+                    .accessibilityAddTraits(.isHeader)
 
-            Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+                Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
 
-            Text("A proxy server that lets vintage computers browse the modern web.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
-
-            Divider()
-                .padding(.horizontal, 60)
+                Text("A proxy server that lets vintage computers browse the modern web.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 320)
+            }
 
             VStack(spacing: 2) {
                 Text("Built with")
@@ -1663,9 +1700,6 @@ struct AboutSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
-
-            Divider()
-                .padding(.horizontal, 60)
 
             Text("© 2024-2026 Bruno van Branden (Simplinity)")
                 .font(.caption)
