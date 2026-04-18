@@ -28,18 +28,19 @@ This is not nostalgia. This is *infrastructure*.
 2. [The Dashboard (Mission Control)](#2-the-dashboard)
 3. [Choosing Your Vintage Machine](#3-choosing-your-vintage-machine)
 4. [Wayback Machine Mode (Time Travel)](#4-wayback-machine-mode)
-5. [The Built-In Start Page](#5-the-built-in-start-page)
-6. [The Request Log (Snooping on Your Own Traffic)](#6-the-request-log)
-7. [The Wayback Timeline (Temporal Forensics)](#7-the-wayback-timeline)
-8. [What RetroGate Does to Your Pages](#8-what-retrogate-does-to-your-pages)
-9. [Image Transcoding & Dithering](#9-image-transcoding--dithering)
-10. [Advanced Settings (Here Be Dragons)](#10-advanced-settings)
-11. [The Menu Bar (For Minimalists)](#11-the-menu-bar)
-12. [Keyboard Shortcuts (For Power Users)](#12-keyboard-shortcuts)
-13. [Dead Services & Redirect Magic](#13-dead-services--redirect-magic)
-14. [SheepShaver Users (Read This)](#14-sheepshaver-users)
-15. [Troubleshooting (When Things Go Sideways)](#15-troubleshooting)
-16. [FAQ (Frequently Argued Questions)](#16-faq)
+5. [The Cache (Your Personal Time Capsule)](#5-the-cache)
+6. [The Built-In Start Page](#6-the-built-in-start-page)
+7. [The Request Log (Snooping on Your Own Traffic)](#7-the-request-log)
+8. [The Wayback Timeline (Temporal Forensics)](#8-the-wayback-timeline)
+9. [What RetroGate Does to Your Pages](#9-what-retrogate-does-to-your-pages)
+10. [Image Transcoding & Dithering](#10-image-transcoding--dithering)
+11. [Advanced Settings (Here Be Dragons)](#11-advanced-settings)
+12. [The Menu Bar (For Minimalists)](#12-the-menu-bar)
+13. [Keyboard Shortcuts (For Power Users)](#13-keyboard-shortcuts)
+14. [Dead Services & Redirect Magic](#14-dead-services--redirect-magic)
+15. [SheepShaver Users (Read This)](#15-sheepshaver-users)
+16. [Troubleshooting (When Things Go Sideways)](#16-troubleshooting)
+17. [FAQ (Frequently Argued Questions)](#17-faq)
 
 ---
 
@@ -198,11 +199,205 @@ Even when you're *not* in Wayback mode, RetroGate has your back. If a live websi
 
 ### Response Caching
 
-Wayback Machine responses are cached locally because archived content is, by definition, immutable. A page from June 15, 1999 will be the same page from June 15, 1999 tomorrow, next week, and after the heat death of the universe. No reason to fetch it twice.
+Every Wayback response is stashed on disk automatically. Archived content is immutable by definition — a page from June 15, 1999 will be the same page from June 15, 1999 tomorrow, next week, and after the heat death of the universe. Second visits are instant.
+
+The **Cache** tab in the sidebar is where you live with this. Browse, filter, search, pin, bundle, export, import, prefetch — see [Section 5: The Cache](#5-the-cache) for the full breakdown.
 
 ---
 
-## 5. The Built-In Start Page
+## 5. The Cache
+
+Navigate to **Monitor → Cache** in the sidebar.
+
+The Wayback Machine is a miracle of human civilization. It is also *slow*. Every request to `web.archive.org` takes two to five seconds, because it's reconstructing the web from tape archives older than some of your coworkers. Multiply that by every image on a 1999 GeoCities page and you can boil water between clicks.
+
+RetroGate's cache fixes this by saving every successful archive response to your local disk. Second visit? Instant. Third visit? Still instant. Next year, on a different vintage Mac? Still instant. Archived content doesn't change, so there's no reason to fetch it twice.
+
+**Everything in this chapter is about the Wayback cache.** Live-web responses are not cached — live sites change, and a proxy that served you stale news from three weeks ago would be a disservice.
+
+### Where the Cache Lives
+
+```
+~/Library/Containers/com.brunowernimont.retrogate/Data/
+  Library/Caches/RetroGate/
+  ├── blobs/           ← one file per cached response, SHA-256-keyed
+  └── index.sqlite     ← metadata sidecar (URL, domain, snapshot date, etc.)
+```
+
+The blobs are raw bytes with a tiny 4-byte header. The sidecar is a proper SQLite database with an FTS5 full-text index bolted on. Open it with any SQLite tool; it won't bite.
+
+### Tour of the Cache Tab
+
+From top to bottom:
+
+1. **Offline Mode banner** — flip this to serve from cache only (see below)
+2. **Hero stats** — four tiles with the headline numbers
+3. **Retention bar** — max size, auto-delete age, Sweep now
+4. **Capsules bar** — your named collections, plus Import and Prefetch buttons
+5. **Filters bar** — URL search, domain dropdown, type dropdown, pinned-only toggle
+6. **Content search bar** — full-text search across HTML pages
+7. **Toolbar** — Refresh, bulk Pin/Unpin/Delete, Clear All
+8. **Table** — one row per cached response, sortable by every column
+
+### The Hero Stats
+
+| Tile | What It Shows |
+|------|---------------|
+| **Entries** | Total cached responses on disk |
+| **On Disk** | Total bytes (HTML + images + CSS + JS — everything that got cached) |
+| **Hits** | Lifetime count of cache hits: how many round-trips to archive.org you've avoided |
+| **Oldest** | Age of the oldest cached entry, so you know how long your personal archive has been growing |
+
+### Retention (Or: How Long You Keep Things)
+
+By default, nothing is ever deleted. Your cache grows forever. This is fine — 100,000 cached pages are usually a gigabyte or two, and you didn't buy that hard drive for moral support.
+
+If you'd rather not hoard, the Retention bar has two knobs:
+
+- **Max size** in MB — RetroGate evicts least-recently-used non-pinned entries until it's under the cap
+- **Auto-delete after** N days — entries untouched for that long get swept away
+
+Set either or both; `0` means "no limit" for that axis. **Sweep now** runs the policy on demand, useful after changing a value.
+
+Eviction is **LRU-aware** and **pin-aware**: we delete the least-recently-accessed non-pinned entries first. A pinned entry is never evicted, period — not for age, not for size, not ever. (If your pinned collection alone exceeds the size cap, the cap quietly loses the argument.)
+
+Automatic sweeps also run every 50 new inserts, so in practice the cache trims itself without you thinking about it.
+
+### Offline Mode
+
+The banner at the top has a switch. Flip it on and RetroGate stops reaching out to archive.org entirely. Cache hit? Served instantly. Cache miss? A friendly 404 explaining you're offline.
+
+Use it when:
+
+- **You're on a train, plane, or cabin with no WiFi** — and the pages you care about are already cached
+- **archive.org is rate-limiting you** — which happens during heavy sessions
+- **You're demoing RetroGate** — and want to prove the cache works without the network doing any of the work
+
+A tiny gold dot appears next to "Cache" in the sidebar whenever offline mode is on, so you remember.
+
+### Selecting, Pinning, Deleting
+
+Rows behave like any macOS list: click to select, Shift-click to extend, Cmd-click to add/remove individually.
+
+The leftmost column is a clickable pin icon — tap it to pin or unpin that row. Pinned rows survive every eviction policy and every Sweep. They're your "definitely keep this forever" flag.
+
+The toolbar at the bottom runs bulk operations:
+
+- **Refresh** — re-read the index (handy after heavy browsing)
+- **Pin / Unpin** — for every selected row
+- **Delete** — removes both the blob file and the index row
+- **Clear All** — nukes the entire cache, including pinned entries, with a confirmation prompt because this is the kind of button that makes you feel briefly awful if you misclick
+
+Right-click a row for the same options plus **Copy URL** (handy for sharing a specific archive link with your nerd friends).
+
+### Filters
+
+Filters narrow the table without touching the underlying cache:
+
+- **Filter by URL** — substring, case-insensitive. Type "apple" to see only URLs containing "apple"
+- **Domain** — dropdown populated from whatever domains are actually in your cache
+- **Type** — HTML, Images, CSS, JavaScript, Other, or All
+- **Pinned only** — a toggle button for "show me my curated keepers"
+
+Filters **stack**. Searching "imgs" in Images on apple.com pinned-only is a perfectly valid query. When any filter is active, a "Clear filters" link appears on the right.
+
+### Capsules (Named Collections)
+
+Capsules are named bundles of cache entries. Think of them as playlists for archived web pages.
+
+**Create one from a selection:**
+
+1. Select the rows you want
+2. Click **New from selection** in the Capsules bar
+3. Type a name ("Apple 1997", "Y2K News Week", whatever makes you happy)
+4. Optionally, a description
+
+The capsule appears as a chip in the Capsules bar with its member count. Click it to filter the table to just that capsule. Click **All** to deselect.
+
+**Right-click a capsule chip** for:
+
+- **Rename…** — change the name or description
+- **Export…** — save the capsule as a `.retrogate-capsule` bundle (see below)
+- **Delete Capsule** — removes the collection but keeps the underlying entries in your cache. The blobs aren't touched.
+
+### Exporting & Importing Capsules
+
+Capsules travel. Export one and you get a folder named `<capsule>.retrogate-capsule`:
+
+```
+Apple 1997.retrogate-capsule/
+  ├── manifest.json         ← capsule metadata + entry list
+  └── blobs/
+      ├── a8f3d2c...
+      └── ...
+```
+
+The manifest is human-readable JSON; the blobs are raw cached bytes. Show Package Contents in Finder and you can inspect everything. No zip, no proprietary format, no mystery — just files.
+
+**Import** someone else's capsule with the Import… button in the Capsules bar: pick their `.retrogate-capsule` folder, and the blobs and metadata merge into your cache. The capsule appears in your chip list, pre-selected so you can see what just arrived.
+
+Things that come along: the full entry metadata (URL, snapshot date, content-type), notes, and pin flags. Things that don't: hit counts and last-accessed timestamps — those reflect *your* relationship with the page, not the sender's.
+
+### Prefetch (Warming the Cache)
+
+Prefetch pre-loads a list of pages without you manually visiting each one. You paste URLs, RetroGate fetches them in the background at a polite 1-per-second pace.
+
+Use it for:
+
+- **"I'm going on a flight Tuesday"** — load up your reading list the night before
+- **Curating a capsule** — prefetch, then bundle the results
+- **Not getting banned** — archive.org notices aggressive fetching; 1/sec is gentle
+
+Click **Prefetch…** in the Capsules bar to open the sheet. Rules:
+
+- One URL per line
+- Lines starting with `#` are comments (skipped)
+- Bare hostnames get `http://` prefixed automatically
+- Already-cached URLs are skipped instantly (no rate-limit tick)
+
+Progress is live: done/total, fetched-from-net vs. already-cached, failed. Hit **Cancel** at any time to stop cleanly (no mid-fetch interruption — the current request completes first).
+
+When it finishes, the sheet offers to wrap the successful fetches into a new capsule. Type a name, click Done, and you've got a ready-to-export bundle.
+
+### Full-Text Search
+
+RetroGate indexes the plain text of every cached HTML page into a SQLite FTS5 full-text index. This lets you search **inside** pages, not just URLs.
+
+Type into **Search page contents** and the table filters to matching rows, ordered by relevance. Each matching row shows a short snippet with the matching words **bolded**.
+
+Query syntax is standard FTS5:
+
+| Query | Matches |
+|-------|---------|
+| `system 7` | Pages containing both words anywhere |
+| `"system 7"` | The exact phrase |
+| `macintosh OR windows` | Either |
+| `apple NEAR/5 macintosh` | "apple" within 5 words of "macintosh" |
+| `pow*` | Prefix wildcard: "power", "powerbook", "powerful", etc. |
+
+The tokenizer uses Porter stemming, so `run` also matches `running` and `runs`. English-specific, but works surprisingly well on most text.
+
+**Build Index** next to the search field runs a full rebuild over every HTML blob currently on disk. You want to click this once after upgrading to the search-enabled version; going forward, new pages get indexed automatically as they cache. The little coverage indicator tells you how many HTML entries are indexed vs. cached (orange = incomplete).
+
+Noisy markup (`<script>`, `<style>`, `<noscript>`) is stripped before indexing, and whitespace is collapsed, so searches match actual words — not JavaScript source or CSS rules. Documents longer than 256 KB of text are clipped (~50,000 words, which is generous; your average 1999 page is about 500 words).
+
+### How All of This Works Together
+
+A typical session:
+
+1. Turn on Wayback mode, pick a date, browse around
+2. Everything you hit gets cached automatically
+3. Later, open the Cache tab and find the pages you want to keep
+4. Pin the keepers, or create a capsule to bundle them
+5. Export the capsule to share with a friend or keep as a backup
+6. Set a Max size if you want the cache to cap itself
+7. Turn on Offline Mode before a long flight
+
+Or: paste a URL list into Prefetch, wrap the results in a capsule, name it "Research for my blog post," and come back next week to find it all instant.
+
+---
+
+## 6. The Built-In Start Page
 
 Point your vintage browser to:
 
@@ -232,7 +427,7 @@ You can also search directly from the start page's search box. It's like Google 
 
 ---
 
-## 6. The Request Log
+## 7. The Request Log
 
 Navigate to **Monitor → Request Log** in the sidebar.
 
@@ -252,7 +447,7 @@ Right-click any entry to copy the URL. If a request had an error, you'll see a t
 
 ---
 
-## 7. The Wayback Timeline
+## 8. The Wayback Timeline
 
 Navigate to **Monitor → Wayback Timeline** in the sidebar.
 
@@ -270,7 +465,7 @@ This is useful for spotting when a site's earliest snapshot postdates your targe
 
 ---
 
-## 8. What RetroGate Does to Your Pages
+## 9. What RetroGate Does to Your Pages
 
 RetroGate doesn't just forward web pages. It *translates* them from the language of 2026 to the language your browser speaks. Here's what happens at each transcoding level:
 
@@ -321,7 +516,7 @@ No matter the transcoding level, every page gets:
 
 ---
 
-## 9. Image Transcoding & Dithering
+## 10. Image Transcoding & Dithering
 
 Modern websites serve images in WebP, AVIF, and other formats that didn't exist when your browser was young. RetroGate converts them all to JPEG or GIF.
 
@@ -360,7 +555,7 @@ When an image fails to load (404, timeout, etc.), RetroGate returns a transparen
 
 ---
 
-## 10. Advanced Settings
+## 11. Advanced Settings
 
 Open **Settings** (Cmd+,) to access the advanced configuration.
 
@@ -377,11 +572,11 @@ Open **Settings** (Cmd+,) to access the advanced configuration.
 
   Subdomains are matched automatically: entering `68kmla.org` also matches `www.68kmla.org`.
 
-- **Dead Endpoint Redirects** — Custom redirects for dead services (format: `hostname=redirect-url`). See [Section 13](#13-dead-services--redirect-magic) for details.
+- **Dead Endpoint Redirects** — Custom redirects for dead services (format: `hostname=redirect-url`). See [Section 14](#14-dead-services--redirect-magic) for details.
 
 ---
 
-## 11. The Menu Bar
+## 12. The Menu Bar
 
 RetroGate puts a small antenna icon in your macOS menu bar. Click it for a quick-access dropdown:
 
@@ -396,7 +591,7 @@ The icon pulses when the proxy is running. It's like a heartbeat for your proxy 
 
 ---
 
-## 12. Keyboard Shortcuts
+## 13. Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
@@ -409,7 +604,7 @@ These work from the main window. Memorize them and you'll never need to click an
 
 ---
 
-## 13. Dead Services & Redirect Magic
+## 14. Dead Services & Redirect Magic
 
 The internet of 1999 had services that no longer exist. When your vintage browser tries to reach its default homepage — say, `home.netscape.com` — it gets nothing. A void. Digital silence.
 
@@ -444,7 +639,7 @@ Modern URLs are often wrapped in tracking redirects: `tracker.com/click?redirect
 
 ---
 
-## 14. SheepShaver Users
+## 15. SheepShaver Users
 
 If you're running classic Mac OS in **SheepShaver**, a few things to know:
 
@@ -454,7 +649,7 @@ If you're running classic Mac OS in **SheepShaver**, a few things to know:
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 ### "Pages aren't loading"
 
@@ -468,7 +663,15 @@ Check your preset matches your actual vintage machine. If you're running Mac OS 
 
 ### "The Wayback Machine is slow"
 
-That's not RetroGate — that's the Internet Archive. It serves billions of archived pages from a non-profit's server room. It's doing its best. RetroGate caches responses to avoid repeated fetches and prefetches images in parallel. After the first load, subsequent visits to the same page should be instant.
+That's not RetroGate — that's the Internet Archive. It serves billions of archived pages from a non-profit's server room. It's doing its best. RetroGate caches every response to disk, so subsequent visits are instant. For even faster access, paste your reading list into **Prefetch…** on the Cache tab and let it warm everything up overnight — see [Section 5: The Cache](#5-the-cache).
+
+### "My cache is full / my disk is filling up"
+
+Open the Cache tab, type a number into **Max size** (MB), and click **Sweep now**. Least-recently-used non-pinned entries get evicted until you're under the cap. Alternatively, **Clear All** wipes the whole thing and starts fresh — your pages are all still on archive.org, it's just a second round-trip away.
+
+### "Search doesn't find pages I know are cached"
+
+You might need to build the search index. Click **Build Index** in the Cache tab's Content Search row. Pages cached from this version onward index automatically, but pages cached before the search feature shipped need a one-time backfill. The orange "Index: N/M HTML pages" hint tells you when you're out of sync.
 
 ### "I keep getting 'Redirect loop detected'"
 
@@ -484,7 +687,7 @@ Make sure your preset platform matches your actual machine. Mac presets output M
 
 ---
 
-## 16. FAQ
+## 17. FAQ
 
 **Q: Does RetroGate work with actual vintage hardware, or just emulators?**
 A: Both. If your vintage Mac or PC can make HTTP requests through a proxy, RetroGate will handle the rest. SheepShaver, Basilisk II, QEMU, PCem, 86Box, or genuine beige hardware — RetroGate doesn't discriminate.
@@ -506,6 +709,18 @@ A: You can certainly try. Some modern sites transcode surprisingly well. Others.
 
 **Q: Is this legal?**
 A: RetroGate is a proxy server on your local network. It's no different from any other HTTP proxy. The Wayback Machine integration uses the Internet Archive's public API and respects robots.txt. You're fine.
+
+**Q: Where is the cache stored? / How big can it get?**
+A: `~/Library/Containers/com.brunowernimont.retrogate/Data/Library/Caches/RetroGate/`. By default it grows without bound — 100,000 cached pages are typically a gigabyte or two, and "I want to keep every page I've ever visited forever" is a completely valid stance. Set a max size in the Cache tab if you'd rather cap it.
+
+**Q: Does the cache survive a restart?**
+A: Yes. Restarts, reboots, and upgrades all preserve it. The only ways to wipe it are **Clear All** in the Cache tab, or upgrading to a future version that bumps the storage format (which we announce in release notes).
+
+**Q: Does RetroGate cache live-web pages too?**
+A: No, only Wayback responses. Live sites change — caching today's CNN homepage and serving it tomorrow would be a disservice. Archived content doesn't have that problem; a snapshot from June 1999 is still the snapshot from June 1999 next week.
+
+**Q: Can I share a capsule with someone?**
+A: Yes. Right-click a capsule chip, pick Export…, and you get a `.retrogate-capsule` folder you can zip, AirDrop, email, or stick on a USB key. The other person opens their Cache tab, clicks Import…, and picks the folder. Done. (The format is human-readable JSON plus raw bytes, so it'll still work with a future version of RetroGate even if we change things internally.)
 
 **Q: Why "RetroGate"?**
 A: Because it's a *gate* between the *retro* internet and the modern one. Also because every good project needs a name that sounds vaguely like a political scandal. RetroGate: the controversy of making old computers useful again.
