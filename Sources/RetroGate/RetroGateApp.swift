@@ -221,6 +221,12 @@ private struct SavedSettings: Codable {
     var colorDepth: String = "thousands"
     var deadEndpointRedirects: String = ""
     var hasCompletedOnboarding: Bool = false
+    /// Max total cache size in MB; 0 means unlimited (default).
+    var cacheMaxSizeMB: Int = 0
+    /// Max days since last access before an entry is auto-deleted; 0 = never.
+    var cacheMaxAgeDays: Int = 0
+    /// Only serve from local cache, never call archive.org.
+    var cacheOfflineMode: Bool = false
 
     static var fileURL: URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -264,6 +270,9 @@ extension SavedSettings {
         if let v = try c.decodeIfPresent(String.self, forKey: .colorDepth) {
             colorDepth = (v == "millions") ? "thousands" : v
         }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .cacheMaxSizeMB) { cacheMaxSizeMB = v }
+        if let v = try c.decodeIfPresent(Int.self, forKey: .cacheMaxAgeDays) { cacheMaxAgeDays = v }
+        if let v = try c.decodeIfPresent(Bool.self, forKey: .cacheOfflineMode) { cacheOfflineMode = v }
     }
 }
 
@@ -301,6 +310,15 @@ class ProxyState: ObservableObject {
     @Published var totalBytesServed: Int64 = 0
     @Published var errorCount: Int = 0
     @Published var recentErrors: [ErrorEntry] = []
+    @Published var cacheMaxSizeMB: Int = 0 {
+        didSet { applyCacheLimits() }
+    }
+    @Published var cacheMaxAgeDays: Int = 0 {
+        didSet { applyCacheLimits() }
+    }
+    @Published var cacheOfflineMode: Bool = false {
+        didSet { saveSettings(); syncConfig() }
+    }
 
     struct ErrorEntry: Identifiable {
         let id = UUID()
@@ -347,6 +365,10 @@ class ProxyState: ObservableObject {
     private var server: ProxyServer?
     private var serverTask: Task<Void, Never>?
 
+    /// Exposed so the Cache view can query the index. Nil when the proxy is stopped.
+    var cacheIndex: CacheIndex? { server?.responseCache.index }
+    var responseCache: ResponseCache? { server?.responseCache }
+
     init() {
         let s = SavedSettings.load()
         port = s.port
@@ -360,6 +382,9 @@ class ProxyState: ObservableObject {
         minifyHTML = s.minifyHTML
         deadEndpointRedirectsText = s.deadEndpointRedirects
         hasCompletedOnboarding = s.hasCompletedOnboarding
+        cacheMaxSizeMB = s.cacheMaxSizeMB
+        cacheMaxAgeDays = s.cacheMaxAgeDays
+        cacheOfflineMode = s.cacheOfflineMode
 
         let preset = VintagePreset.all.first { $0.id == presetId } ?? VintagePreset.all[3]
         if let depth = ColorDepth(rawValue: s.colorDepth), preset.supportedColorDepths.contains(depth) {
@@ -386,8 +411,18 @@ class ProxyState: ObservableObject {
             minifyHTML: minifyHTML,
             colorDepth: colorDepth.rawValue,
             deadEndpointRedirects: deadEndpointRedirectsText,
-            hasCompletedOnboarding: hasCompletedOnboarding
+            hasCompletedOnboarding: hasCompletedOnboarding,
+            cacheMaxSizeMB: cacheMaxSizeMB,
+            cacheMaxAgeDays: cacheMaxAgeDays,
+            cacheOfflineMode: cacheOfflineMode
         ).save()
+    }
+
+    /// Push current retention limits into the response cache and run a sweep.
+    /// Also persists them so they survive restart.
+    func applyCacheLimits() {
+        saveSettings()
+        responseCache?.updateLimits(maxSizeMB: cacheMaxSizeMB, maxAgeDays: cacheMaxAgeDays)
     }
 
     func toggleProxy() {
@@ -424,6 +459,7 @@ class ProxyState: ObservableObject {
             minifyHTML: minifyHTML,
             colorDepth: colorDepth,
             deadEndpointRedirects: deadEndpointRedirects,
+            cacheOfflineMode: cacheOfflineMode,
             onRequestLogged: server.sharedConfig.value.onRequestLogged
         )
         server.temporalCache.clear()
@@ -441,6 +477,7 @@ class ProxyState: ObservableObject {
             minifyHTML: minifyHTML,
             colorDepth: colorDepth,
             deadEndpointRedirects: deadEndpointRedirects,
+            cacheOfflineMode: cacheOfflineMode,
             onRequestLogged: { [weak self] entry in
                 Task { @MainActor in
                     guard let self = self else { return }
@@ -475,6 +512,10 @@ class ProxyState: ObservableObject {
 
         let newServer = ProxyServer(host: "0.0.0.0", port: Int(port), configuration: config)
         self.server = newServer
+
+        // Push retention limits into the freshly-created ResponseCache and
+        // trigger an initial sweep. Cheap no-op when both are 0 (unlimited).
+        newServer.responseCache.updateLimits(maxSizeMB: cacheMaxSizeMB, maxAgeDays: cacheMaxAgeDays)
 
         serverTask = Task.detached {
             do {
@@ -546,6 +587,7 @@ struct ContentView: View {
     enum SidebarItem: String, CaseIterable {
         case dashboard = "Dashboard"
         case requestLog = "Request Log"
+        case cache = "Cache"
         case waybackTimeline = "Wayback Timeline"
         case vintageComputer = "Vintage Computer"
         case waybackMachine = "Wayback Machine"
@@ -563,6 +605,19 @@ struct ContentView: View {
                         .tag(SidebarItem.requestLog)
                         .accessibilityLabel("Request Log")
                         .accessibilityHint("View all proxied requests")
+                    HStack {
+                        Label("Cache", systemImage: "archivebox")
+                        if state.cacheOfflineMode {
+                            Circle()
+                                .fill(Color.gold)
+                                .frame(width: 6, height: 6)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .tag(SidebarItem.cache)
+                    .accessibilityLabel("Cache")
+                    .accessibilityValue(state.cacheOfflineMode ? "offline mode enabled" : "online")
+                    .accessibilityHint("Browse and manage cached Wayback pages")
                     Label("Wayback Timeline", systemImage: "clock.arrow.circlepath")
                         .tag(SidebarItem.waybackTimeline)
                         .accessibilityLabel("Wayback Timeline")
@@ -594,9 +649,11 @@ struct ContentView: View {
             case .dashboard:
                 dashboardView
             case .requestLog:
-                requestLogView
+                RequestLogView()
+            case .cache:
+                CacheView()
             case .waybackTimeline:
-                waybackTimelineView
+                WaybackTimelineView()
             case .vintageComputer:
                 vintageComputerView
             case .waybackMachine:
@@ -656,7 +713,7 @@ struct ContentView: View {
                 dashboardHero
 
                 // Stats row
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 5), spacing: 12) {
                     DashboardStatCard(
                         icon: "arrow.up.arrow.down",
                         title: "Requests",
@@ -674,6 +731,12 @@ struct ContentView: View {
                         title: "Saved",
                         value: dashboardSavingsPercent,
                         detail: dashboardSavingsDetail
+                    )
+                    DashboardStatCard(
+                        icon: "clock.badge.checkmark",
+                        title: "Time Saved",
+                        value: cacheTimeSavedValue,
+                        detail: cacheTimeSavedDetail
                     )
                     DashboardStatCard(
                         icon: "clock",
@@ -1014,6 +1077,35 @@ struct ContentView: View {
         return "\(ByteCountFormatter.string(fromByteCount: saved, countStyle: .file)) saved"
     }
 
+    /// Average Wayback round-trip we avoid on each cache hit. Conservative —
+    /// archive.org often takes 3–5 seconds, more when it's under load.
+    private static let avgWaybackFetchSeconds: Int64 = 3
+
+    private var cacheSavings: (hits: Int64, bytesAvoided: Int64) {
+        state.cacheIndex?.cacheStatsSummary() ?? (0, 0)
+    }
+
+    private var cacheTimeSavedValue: String {
+        let seconds = cacheSavings.hits * Self.avgWaybackFetchSeconds
+        return formatElapsedSeconds(seconds)
+    }
+
+    private var cacheTimeSavedDetail: String {
+        let stats = cacheSavings
+        guard stats.hits > 0 else { return "No hits yet" }
+        let bytes = ByteCountFormatter.string(fromByteCount: stats.bytesAvoided, countStyle: .file)
+        return "\(stats.hits) hit\(stats.hits == 1 ? "" : "s") · \(bytes)"
+    }
+
+    private func formatElapsedSeconds(_ seconds: Int64) -> String {
+        if seconds <= 0 { return "—" }
+        if seconds < 60 { return "\(seconds)s" }
+        if seconds < 3600 { return "\(seconds / 60)m" }
+        let h = seconds / 3600
+        let m = (seconds % 3600) / 60
+        return m > 0 ? "\(h)h \(m)m" : "\(h)h"
+    }
+
     // MARK: - Vintage Computer
 
     private var vintageComputerView: some View {
@@ -1162,150 +1254,10 @@ struct ContentView: View {
         .onChange(of: state.waybackToleranceMonths) { _ in state.saveSettings(); state.syncConfig() }
     }
 
-    // MARK: - Request Log
-
-    private var requestLogView: some View {
-        VStack {
-            if state.requestLog.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary)
-                    Text("No Requests Yet")
-                        .font(.headline)
-                    Text("Requests will appear here as your vintage Mac browses the web.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                Table(state.requestLog) {
-                    TableColumn("Time") { entry in
-                        Text(entry.timestamp, style: .time)
-                            .monospacedDigit()
-                            .accessibilityLabel("Time: \(entry.timestamp.formatted(date: .omitted, time: .shortened))")
-                    }
-                    .width(min: 70, max: 90)
-
-                    TableColumn("Method") { entry in
-                        Text(entry.method)
-                            .fontWeight(.medium)
-                            .accessibilityLabel("Method: \(entry.method)")
-                    }
-                    .width(min: 50, max: 60)
-
-                    TableColumn("URL") { entry in
-                        HStack(spacing: 4) {
-                            if entry.errorMessage != nil {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.red)
-                                    .accessibilityLabel("Error")
-                            }
-                            Text(entry.url)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .contextMenu {
-                            Button("Copy URL") {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(entry.url, forType: .string)
-                            }
-                            if let err = entry.errorMessage {
-                                Divider()
-                                Text("Error: \(err)")
-                            }
-                        }
-                        .accessibilityLabel("URL: \(entry.url)")
-                    }
-
-                    TableColumn("Status") { entry in
-                        Text("\(entry.statusCode)")
-                            .foregroundColor(entry.statusCode < 400 ? .primary : .red)
-                            .accessibilityLabel("Status: \(entry.statusCode)")
-                    }
-                    .width(min: 50, max: 60)
-
-                    TableColumn("Size") { entry in
-                        Text(ByteCountFormatter.string(fromByteCount: Int64(entry.transcodedSize), countStyle: .file))
-                            .accessibilityLabel("Size: \(ByteCountFormatter.string(fromByteCount: Int64(entry.transcodedSize), countStyle: .file))")
-                    }
-                    .width(min: 60, max: 80)
-                }
-            }
-        }
-    }
-
-    // MARK: - Wayback Timeline
-
-    private var waybackEntries: [RequestLogEntry] {
-        state.requestLog.filter { $0.waybackDate != nil && ($0.contentType?.contains("text/html") == true) }
-    }
-
-    private var waybackTimelineView: some View {
-        VStack {
-            if waybackEntries.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary)
-                    Text("No Wayback Pages Yet")
-                        .font(.headline)
-                    Text("Pages served from the Wayback Machine will appear here, showing the actual archive date vs your target date.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                Table(waybackEntries) {
-                    TableColumn("Time") { entry in
-                        Text(entry.timestamp, style: .time)
-                            .monospacedDigit()
-                    }
-                    .width(min: 70, max: 90)
-
-                    TableColumn("URL") { entry in
-                        Text(Self.shortURL(entry.url))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .contextMenu {
-                                Button("Copy URL") {
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(entry.url, forType: .string)
-                                }
-                            }
-                    }
-
-                    TableColumn("Target") { _ in
-                        Text(Self.formatWaybackDate(state.waybackDate))
-                            .foregroundStyle(.secondary)
-                    }
-                    .width(min: 90, max: 110)
-
-                    TableColumn("Actual") { entry in
-                        if let wbDate = entry.waybackDate {
-                            Text(Self.formatDateStamp(wbDate))
-                        }
-                    }
-                    .width(min: 90, max: 110)
-
-                    TableColumn("Delta") { entry in
-                        if let wbDate = entry.waybackDate {
-                            let delta = Self.dateDelta(target: state.waybackDate, actual: wbDate)
-                            Text(delta.label)
-                                .foregroundStyle(delta.color)
-                                .fontWeight(delta.isExact ? .regular : .medium)
-                                .accessibilityLabel("Date difference: \(delta.label)")
-                        }
-                    }
-                    .width(min: 80, max: 120)
-                }
-            }
-        }
-    }
-
     // MARK: - Helpers
 
+    /// Short display form of a URL: host + path, dropping trailing slash-only paths.
+    /// Used by the Dashboard's error list.
     static func shortURL(_ urlString: String) -> String {
         guard let url = URL(string: urlString) else { return urlString }
         let host = url.host ?? ""
@@ -1314,57 +1266,6 @@ struct ContentView: View {
             return host
         }
         return host + path
-    }
-
-    static func formatWaybackDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "MMM d, yyyy"
-        return f.string(from: date)
-    }
-
-    private static func formatDateStamp(_ stamp: String) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyyMMdd"
-        guard let date = f.date(from: stamp) else { return stamp }
-        let display = DateFormatter()
-        display.dateFormat = "MMM d, yyyy"
-        return display.string(from: date)
-    }
-
-    private static func dateDelta(target: Date, actual: String) -> (label: String, color: Color, isExact: Bool) {
-        let f = DateFormatter()
-        f.dateFormat = "yyyyMMdd"
-        guard let actualDate = f.date(from: actual) else {
-            return (actual, .secondary, false)
-        }
-
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.day], from: calendar.startOfDay(for: target), to: calendar.startOfDay(for: actualDate))
-        let days = components.day ?? 0
-
-        if days == 0 {
-            return ("Exact", .green, true)
-        }
-
-        let absDays = abs(days)
-        let label: String
-        if absDays < 30 {
-            label = "\(days > 0 ? "+" : "")\(days)d"
-        } else if absDays < 365 {
-            let months = absDays / 30
-            label = "\(days > 0 ? "+" : "-")\(months)mo"
-        } else {
-            let years = absDays / 365
-            let remMonths = (absDays % 365) / 30
-            if remMonths > 0 {
-                label = "\(days > 0 ? "+" : "-")\(years)y \(remMonths)mo"
-            } else {
-                label = "\(days > 0 ? "+" : "-")\(years)y"
-            }
-        }
-
-        let color: Color = absDays <= 7 ? .green : absDays <= 90 ? Color.gold : .red
-        return (label, color, false)
     }
 }
 

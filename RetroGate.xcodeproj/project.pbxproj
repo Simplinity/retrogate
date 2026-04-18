@@ -8,8 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		047FEEDF4A6A44C7246C3CE7 /* ProxyConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */; };
+		08B18F71F651B3F93F0861EB /* CapsuleBundler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48DEBE7C10136491CD392E35 /* CapsuleBundler.swift */; };
+		0943671D7E67604CF983EB49 /* WaybackTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 703A79DBBDC7B59AEB8341A7 /* WaybackTimelineView.swift */; };
 		0D7886467CCCF365EDB0D266 /* ProxyHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39520E74309A5500DBEC4F6C /* ProxyHandler.swift */; };
 		0E77BD241FDD01B0B4A5A181 /* NIOPosix in Frameworks */ = {isa = PBXBuildFile; productRef = 6DF704F53856B44B587AC605 /* NIOPosix */; };
+		139C238DDE9D7AB4998C4CE5 /* HTMLPlainifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA3A8936003F4060180A9E1 /* HTMLPlainifier.swift */; };
+		1968793329C0C950D53A06BC /* CacheIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A890D7E96082893D3B2B152C /* CacheIndexTests.swift */; };
 		20F71BDFDF1B965660CD616A /* ImageTranscoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA089AAC87CA6A6D49797678 /* ImageTranscoder.swift */; };
 		2BF27ADE54DB10B1C6C26671 /* TranscoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75591393CB69816132E71061 /* TranscoderTests.swift */; };
 		2DFAB36263112193D7F0E8C4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FE4D42FBE6FFFF364EA9EDC1 /* Assets.xcassets */; };
@@ -17,13 +21,23 @@
 		3D46D25EF67515E8AD1631C4 /* NIO in Frameworks */ = {isa = PBXBuildFile; productRef = D703CA232A1E734A8EF144F3 /* NIO */; };
 		496FFBD78ED32F5409E73173 /* NIOHTTP1 in Frameworks */ = {isa = PBXBuildFile; productRef = 6E606369C368A13E167FB1C6 /* NIOHTTP1 */; };
 		4E2045BE9F1FFE035E4552B6 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = DCD1DD5A59D856F8BB619931 /* SwiftSoup */; };
+		601A128D0DF0419B2C66FFA4 /* CacheEvictionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C1C2C4C798A25B2ED3E24ED /* CacheEvictionPolicyTests.swift */; };
+		63A82EADD0B0C7DF86AD91E6 /* CacheIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD4DB4F6D5BAB7B3D0C5661 /* CacheIndex.swift */; };
+		6BBBFF538FD8903ABE818046 /* CacheWarmerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A948F21BD8802DB33FF52E /* CacheWarmerTests.swift */; };
+		7CDA210ADE85F6BBC3E85691 /* CacheWarmer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DC56018F9DC63DB09C033DE /* CacheWarmer.swift */; };
+		7D364E3C204F361E46E74F56 /* CacheEvictionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1619BBC4F7D8F79B2474420C /* CacheEvictionPolicy.swift */; };
+		7F2ACF2AB97F9AB088C9D967 /* PrefetchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C06123F43B782DA0BEE0237E /* PrefetchView.swift */; };
 		849F784601FA86EF411F9E59 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA12016C271B60FA4433AA06 /* UpdateChecker.swift */; };
 		8564849C53252A0ABF70FFA0 /* RedirectTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9936BDA1EF4E7676BA65FE /* RedirectTracker.swift */; };
+		99C774B747EB392ECD8BCA6A /* RequestLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09037F6BE7480E5712383DD8 /* RequestLogView.swift */; };
 		9BFAD63027DF1A3C59D5C76A /* ProxyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC6688AF1A562F831CE58EAD /* ProxyServer.swift */; };
+		A1202CF852759AFAF33DF9B2 /* CacheView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4E7D77A098AE27A3E72E42 /* CacheView.swift */; };
+		ACBD61D2FD4E9711E773503A /* CapsuleBundlerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DED9C28E291B433895DA0A7 /* CapsuleBundlerTests.swift */; };
 		B04CA169D540C9D5BE972289 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 7C1F01C7A1C81AA5012A4DE2 /* ArgumentParser */; };
 		B34B5EA6856374150B12EDF5 /* TemporalCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC00CE3AF320976BF872116F /* TemporalCache.swift */; };
 		C8D7A654FDD762590BB6036E /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 3A79BE4D647742AAA02C6600 /* Logging */; };
 		C8E7D2296E0929A2ACF50A81 /* RetroGateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FB5626E134D68887F712CC /* RetroGateApp.swift */; };
+		D5E90AA0F4D7FD4D164C56EB /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = CB9D7134BD626403DDDBB24B /* libsqlite3.tbd */; };
 		DE785790E5A1C2000E55B8C7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */; };
 		EC94EB886F5AA1525AF5CE8D /* HTMLTranscoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC9C94357F6CFBB8E7DD7ED /* HTMLTranscoder.swift */; };
 		F24E84D5DB09227FA6D7943D /* NIOExtras in Frameworks */ = {isa = PBXBuildFile; productRef = F032EFE06494BA8D26BAC152 /* NIOExtras */; };
@@ -42,15 +56,29 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		09037F6BE7480E5712383DD8 /* RequestLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestLogView.swift; sourceTree = "<group>"; };
 		14AF3C1D9F37326F234539D7 /* RetroGate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroGate.entitlements; sourceTree = "<group>"; };
+		1619BBC4F7D8F79B2474420C /* CacheEvictionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEvictionPolicy.swift; sourceTree = "<group>"; };
+		1DC56018F9DC63DB09C033DE /* CacheWarmer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheWarmer.swift; sourceTree = "<group>"; };
 		39520E74309A5500DBEC4F6C /* ProxyHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyHandler.swift; sourceTree = "<group>"; };
 		3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyConfiguration.swift; sourceTree = "<group>"; };
+		48DEBE7C10136491CD392E35 /* CapsuleBundler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapsuleBundler.swift; sourceTree = "<group>"; };
+		52A948F21BD8802DB33FF52E /* CacheWarmerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheWarmerTests.swift; sourceTree = "<group>"; };
 		5BA702C83D51F24019222717 /* WaybackBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaybackBridge.swift; sourceTree = "<group>"; };
+		5C4E7D77A098AE27A3E72E42 /* CacheView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheView.swift; sourceTree = "<group>"; };
 		5ED34BBEC832185A9EB98D9A /* ResponseCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCache.swift; sourceTree = "<group>"; };
+		6AD4DB4F6D5BAB7B3D0C5661 /* CacheIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheIndex.swift; sourceTree = "<group>"; };
+		6C1C2C4C798A25B2ED3E24ED /* CacheEvictionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEvictionPolicyTests.swift; sourceTree = "<group>"; };
+		703A79DBBDC7B59AEB8341A7 /* WaybackTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaybackTimelineView.swift; sourceTree = "<group>"; };
 		75591393CB69816132E71061 /* TranscoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscoderTests.swift; sourceTree = "<group>"; };
+		8CA3A8936003F4060180A9E1 /* HTMLPlainifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLPlainifier.swift; sourceTree = "<group>"; };
 		94FB5626E134D68887F712CC /* RetroGateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroGateApp.swift; sourceTree = "<group>"; };
 		95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		9DED9C28E291B433895DA0A7 /* CapsuleBundlerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapsuleBundlerTests.swift; sourceTree = "<group>"; };
+		A890D7E96082893D3B2B152C /* CacheIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheIndexTests.swift; sourceTree = "<group>"; };
 		BB70DD42D2D9B6177A503E9B /* RetroGate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroGate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C06123F43B782DA0BEE0237E /* PrefetchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrefetchView.swift; sourceTree = "<group>"; };
+		CB9D7134BD626403DDDBB24B /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		DC00CE3AF320976BF872116F /* TemporalCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemporalCache.swift; sourceTree = "<group>"; };
 		E528FA82BF2F651863584CF0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		EA089AAC87CA6A6D49797678 /* ImageTranscoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageTranscoder.swift; sourceTree = "<group>"; };
@@ -75,6 +103,7 @@
 				4E2045BE9F1FFE035E4552B6 /* SwiftSoup in Frameworks */,
 				B04CA169D540C9D5BE972289 /* ArgumentParser in Frameworks */,
 				C8D7A654FDD762590BB6036E /* Logging in Frameworks */,
+				D5E90AA0F4D7FD4D164C56EB /* libsqlite3.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +148,7 @@
 			children = (
 				E2B9BBF217A517B76C853A7C /* Sources */,
 				5CD0C32338A1325B469C57DD /* Tests */,
+				FDC6DAEDCC746E0D09B37CFC /* Frameworks */,
 				855BF405168C8633D3385FC6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -126,6 +156,11 @@
 		CC48A42A43B0C799C30E809D /* ProxyServer */ = {
 			isa = PBXGroup;
 			children = (
+				1619BBC4F7D8F79B2474420C /* CacheEvictionPolicy.swift */,
+				6AD4DB4F6D5BAB7B3D0C5661 /* CacheIndex.swift */,
+				1DC56018F9DC63DB09C033DE /* CacheWarmer.swift */,
+				48DEBE7C10136491CD392E35 /* CapsuleBundler.swift */,
+				8CA3A8936003F4060180A9E1 /* HTMLPlainifier.swift */,
 				3F4F21991005C3E08E8E97BF /* ProxyConfiguration.swift */,
 				39520E74309A5500DBEC4F6C /* ProxyHandler.swift */,
 				EC6688AF1A562F831CE58EAD /* ProxyServer.swift */,
@@ -147,6 +182,10 @@
 		D8FB8A44A145EBFB40EE1E9B /* RetroGateTests */ = {
 			isa = PBXGroup;
 			children = (
+				6C1C2C4C798A25B2ED3E24ED /* CacheEvictionPolicyTests.swift */,
+				A890D7E96082893D3B2B152C /* CacheIndexTests.swift */,
+				52A948F21BD8802DB33FF52E /* CacheWarmerTests.swift */,
+				9DED9C28E291B433895DA0A7 /* CapsuleBundlerTests.swift */,
 				75591393CB69816132E71061 /* TranscoderTests.swift */,
 			);
 			path = RetroGateTests;
@@ -168,13 +207,25 @@
 			isa = PBXGroup;
 			children = (
 				FE4D42FBE6FFFF364EA9EDC1 /* Assets.xcassets */,
+				5C4E7D77A098AE27A3E72E42 /* CacheView.swift */,
 				E528FA82BF2F651863584CF0 /* Info.plist */,
+				C06123F43B782DA0BEE0237E /* PrefetchView.swift */,
 				95E9762676EB200B4A471E01 /* PrivacyInfo.xcprivacy */,
+				09037F6BE7480E5712383DD8 /* RequestLogView.swift */,
 				14AF3C1D9F37326F234539D7 /* RetroGate.entitlements */,
 				94FB5626E134D68887F712CC /* RetroGateApp.swift */,
 				FA12016C271B60FA4433AA06 /* UpdateChecker.swift */,
+				703A79DBBDC7B59AEB8341A7 /* WaybackTimelineView.swift */,
 			);
 			path = RetroGate;
+			sourceTree = "<group>";
+		};
+		FDC6DAEDCC746E0D09B37CFC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CB9D7134BD626403DDDBB24B /* libsqlite3.tbd */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -283,17 +334,26 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D364E3C204F361E46E74F56 /* CacheEvictionPolicy.swift in Sources */,
+				63A82EADD0B0C7DF86AD91E6 /* CacheIndex.swift in Sources */,
+				A1202CF852759AFAF33DF9B2 /* CacheView.swift in Sources */,
+				7CDA210ADE85F6BBC3E85691 /* CacheWarmer.swift in Sources */,
+				08B18F71F651B3F93F0861EB /* CapsuleBundler.swift in Sources */,
+				139C238DDE9D7AB4998C4CE5 /* HTMLPlainifier.swift in Sources */,
 				EC94EB886F5AA1525AF5CE8D /* HTMLTranscoder.swift in Sources */,
 				20F71BDFDF1B965660CD616A /* ImageTranscoder.swift in Sources */,
+				7F2ACF2AB97F9AB088C9D967 /* PrefetchView.swift in Sources */,
 				047FEEDF4A6A44C7246C3CE7 /* ProxyConfiguration.swift in Sources */,
 				0D7886467CCCF365EDB0D266 /* ProxyHandler.swift in Sources */,
 				9BFAD63027DF1A3C59D5C76A /* ProxyServer.swift in Sources */,
 				8564849C53252A0ABF70FFA0 /* RedirectTracker.swift in Sources */,
+				99C774B747EB392ECD8BCA6A /* RequestLogView.swift in Sources */,
 				3C834DCBD0DC02484CFECAFA /* ResponseCache.swift in Sources */,
 				C8E7D2296E0929A2ACF50A81 /* RetroGateApp.swift in Sources */,
 				B34B5EA6856374150B12EDF5 /* TemporalCache.swift in Sources */,
 				849F784601FA86EF411F9E59 /* UpdateChecker.swift in Sources */,
 				F9BC1B56858C3DA7BB7D8D50 /* WaybackBridge.swift in Sources */,
+				0943671D7E67604CF983EB49 /* WaybackTimelineView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -301,6 +361,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				601A128D0DF0419B2C66FFA4 /* CacheEvictionPolicyTests.swift in Sources */,
+				1968793329C0C950D53A06BC /* CacheIndexTests.swift in Sources */,
+				6BBBFF538FD8903ABE818046 /* CacheWarmerTests.swift in Sources */,
+				ACBD61D2FD4E9711E773503A /* CapsuleBundlerTests.swift in Sources */,
 				2BF27ADE54DB10B1C6C26671 /* TranscoderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

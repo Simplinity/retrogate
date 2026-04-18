@@ -53,6 +53,10 @@ public struct ProxyConfiguration: Sendable {
     public var colorDepth: ColorDepth
     /// User-defined dead endpoint redirects (host → redirect URL).
     public var deadEndpointRedirects: [String: String]
+    /// When true, the proxy serves cached responses only; cache misses return a
+    /// local 404 page instead of reaching out to archive.org. Useful for demos,
+    /// slow connections, or when archive.org is rate-limiting.
+    public var cacheOfflineMode: Bool
     public var onRequestLogged: (@Sendable (RequestLogData) -> Void)?
 
     public init(
@@ -65,6 +69,7 @@ public struct ProxyConfiguration: Sendable {
         minifyHTML: Bool = false,
         colorDepth: ColorDepth = .thousands,
         deadEndpointRedirects: [String: String] = [:],
+        cacheOfflineMode: Bool = false,
         onRequestLogged: (@Sendable (RequestLogData) -> Void)? = nil
     ) {
         self.browsingMode = browsingMode
@@ -76,6 +81,7 @@ public struct ProxyConfiguration: Sendable {
         self.minifyHTML = minifyHTML
         self.colorDepth = colorDepth
         self.deadEndpointRedirects = deadEndpointRedirects
+        self.cacheOfflineMode = cacheOfflineMode
         self.onRequestLogged = onRequestLogged
     }
 }

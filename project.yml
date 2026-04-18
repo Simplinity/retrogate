@@ -79,6 +79,7 @@ targets:
         product: ArgumentParser
       - package: swift-log
         product: Logging
+      - sdk: libsqlite3.tbd
 
   RetroGateTests:
     type: bundle.unit-test

@@ -308,8 +308,10 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
                 // Prefetch sub-resources for Wayback HTML pages.
                 // Fires parallel background requests so images are cached
                 // before the vintage browser asks for them.
+                // Skipped in offline mode — we'd only fail every request.
                 if contentType.contains("text/html"),
-                   case .wayback(let targetDate, _) = config.browsingMode {
+                   case .wayback(let targetDate, _) = config.browsingMode,
+                   !config.cacheOfflineMode {
                     Self.prefetchWaybackImages(
                         htmlData: data,
                         pageURL: resolvedURL,
@@ -366,6 +368,7 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         let cacheKey = fetchURL.absoluteString
         let data: Data
         let response: URLResponse
+        let wasFreshFetch: Bool
         if let cached = responseCache.get(url: cacheKey) {
             logger.debug("Wayback cache hit: \(originalURL.absoluteString)")
             data = cached.data
@@ -374,6 +377,12 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
                 httpVersion: "HTTP/1.0",
                 headerFields: ["Content-Type": cached.contentType]
             )!
+            wasFreshFetch = false
+        } else if configuration.cacheOfflineMode {
+            // Offline mode: serve cached responses only, never call archive.org.
+            logger.info("Offline cache miss: \(originalURL.absoluteString)")
+            return (Self.offlineCacheMissPage(for: originalURL),
+                    "text/html; charset=iso-8859-1", 404, [], nil)
         } else {
             // Fetch with retry + exponential backoff (archive.org is unreliable).
             let (fetchedData, fetchedResponse) = try await Self.fetchWithRetry(
@@ -382,13 +391,10 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
             )
             data = fetchedData
             response = fetchedResponse
-
-            // Cache successful responses
-            if let httpResp = fetchedResponse as? HTTPURLResponse,
-               httpResp.statusCode >= 200 && httpResp.statusCode < 400,
-               let ct = httpResp.value(forHTTPHeaderField: "Content-Type") {
-                responseCache.set(url: cacheKey, data: fetchedData, contentType: ct)
-            }
+            wasFreshFetch = true
+            // NOTE: caching deferred until after error/drift checks below — we don't
+            // want to persist Wayback "Page Not Archived" pages or out-of-tolerance
+            // snapshots. See the responseCache.set() call further down.
         }
 
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -417,15 +423,10 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
 
         // Temporal consistency: extract resolved snapshot date, cache for sub-resources.
         var resolvedWaybackDate: String? = nil
-        if let finalURL = httpResponse.url?.absoluteString,
-           let domain = originalURL.host {
-            let tsPattern = #"/web/(\d{4,14})\w*/"#
-            if let regex = try? NSRegularExpression(pattern: tsPattern),
-               let match = regex.firstMatch(in: finalURL, range: NSRange(finalURL.startIndex..., in: finalURL)),
-               let range = Range(match.range(at: 1), in: finalURL) {
-                let resolvedStamp = String(String(finalURL[range]).prefix(8))
-                resolvedWaybackDate = resolvedStamp
-                temporalCache.set(domain: domain, dateStamp: resolvedStamp)
+        if let stamp = Self.extractWaybackTimestamp(from: httpResponse.url?.absoluteString) {
+            resolvedWaybackDate = stamp
+            if let domain = originalURL.host {
+                temporalCache.set(domain: domain, dateStamp: stamp)
             }
         }
 
@@ -443,6 +444,18 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
             ) {
                 return (driftError, "text/html; charset=iso-8859-1", 404, [], stamp)
             }
+        }
+
+        // Cache the fetched bytes now that we know they represent a real, in-tolerance
+        // archived response (not a Wayback error page and not a drift rejection).
+        if wasFreshFetch, httpResponse.statusCode >= 200, httpResponse.statusCode < 400 {
+            responseCache.set(
+                url: cacheKey,
+                data: data,
+                contentType: contentType,
+                originalURL: originalURL.absoluteString,
+                waybackDate: resolvedWaybackDate
+            )
         }
 
         // Process content (shared with live-web pipeline)
@@ -686,6 +699,40 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
         </body></html>
         """
         return html.data(using: .isoLatin1, allowLossyConversion: true) ?? Data(html.utf8)
+    }
+
+    /// Extract the `YYYYMMDD` snapshot stamp from a Wayback URL like
+    /// `https://web.archive.org/web/19970615000000/http://apple.com/`.
+    /// Returns the first 8 digits of the timestamp capture, or nil if no match.
+    static func extractWaybackTimestamp(from urlString: String?) -> String? {
+        guard let s = urlString else { return nil }
+        let pattern = #"/web/(\d{4,14})\w*/"#
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)),
+              let range = Range(match.range(at: 1), in: s) else { return nil }
+        return String(String(s[range]).prefix(8))
+    }
+
+    /// Friendly 404 served when Offline Mode is on and the cache doesn't have
+    /// this URL. Tells the user what's going on without pretending the page
+    /// doesn't exist on archive.org.
+    private static func offlineCacheMissPage(for originalURL: URL) -> Data {
+        let body = """
+        <p>Retrogate is in <b>offline mode</b>, so it only serves pages that are
+        already in its local cache.</p>
+        <p>This page isn't cached yet:<br>
+        <code>\(originalURL.absoluteString)</code></p>
+        <p>Turn off Offline Mode in the Cache tab to fetch it from the Wayback Machine.</p>
+        """
+        return Self.errorPage("Not in Local Cache", body)
+    }
+
+    /// Render a `Date` as a Wayback `YYYYMMDD` stamp (UTC — archive.org uses UTC).
+    static func formatWaybackStamp(_ date: Date) -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyyMMdd"
+        fmt.timeZone = TimeZone(identifier: "UTC")
+        return fmt.string(from: date)
     }
 
     /// Extract and clean Set-Cookie headers from an HTTP response.
@@ -1444,7 +1491,15 @@ final class ProxyHTTPHandler: ChannelInboundHandler {
                     if let http = response as? HTTPURLResponse,
                        http.statusCode >= 200, http.statusCode < 400,
                        let ct = http.value(forHTTPHeaderField: "Content-Type") {
-                        responseCache.set(url: cacheKey, data: data, contentType: ct)
+                        let resolvedStamp = Self.extractWaybackTimestamp(from: http.url?.absoluteString)
+                                          ?? Self.formatWaybackStamp(fetchDate)
+                        responseCache.set(
+                            url: cacheKey,
+                            data: data,
+                            contentType: ct,
+                            originalURL: imageURL.absoluteString,
+                            waybackDate: resolvedStamp
+                        )
                         logger.debug("Prefetched: \(imageURL.lastPathComponent) (\(data.count) bytes)")
                     }
                 } catch {

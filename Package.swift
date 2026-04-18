@@ -49,6 +49,9 @@ let package = Package(
                 "HTMLTranscoder",
                 "ImageTranscoder",
                 "WaybackBridge",
+            ],
+            linkerSettings: [
+                .linkedLibrary("sqlite3")
             ]
         ),
         // HTML5 → HTML 3.2 transcoder
